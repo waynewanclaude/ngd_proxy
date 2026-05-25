@@ -1,0 +1,9 @@
+{
+  "server_base_url": "http://127.0.0.1:8000",
+  "api_key": "your-secure-default-key-here",
+  "cache_enabled": true,
+  "cache_dir": "~/.cache/norgatedata",
+  "max_cache_size_mb": 10000,
+  "eviction_policy": "LRU",
+  "refresh_expired_days": 1
+}

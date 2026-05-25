@@ -1,0 +1,29 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Caches and databases
+.cache/
+cache_index.db
+*.parquet
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# IDE files
+.vscode/
+.idea/
+
+# Configuration files
+config.json
+remote_test_j_config.json
+config_test.json
+
+# Jupyter Notebooks
+*.ipynb
+.ipynb_checkpoints/
