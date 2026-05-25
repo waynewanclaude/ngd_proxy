@@ -18,10 +18,9 @@ logging.getLogger("NorgateDataCache").setLevel(logging.WARNING)
 logging.getLogger("uvicorn").setLevel(logging.ERROR)
 
 # Import our proxy components
-from server import app
-import server
-from client import NorgateDataClient
-from norgatedata_cache import NorgateDataCache
+from ngd_proxy.server import app
+from ngd_proxy import server
+from ngd_proxy import NorgateDataClient, NorgateDataCache
 
 logger = logging.getLogger("Test")
 logging.basicConfig(level=logging.INFO)

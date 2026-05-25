@@ -27,3 +27,12 @@ config_test.json
 # Jupyter Notebooks
 *.ipynb
 .ipynb_checkpoints/
+
+# Python packaging & builds
+build/
+dist/
+*.egg-info/
+
+# Local test directories
+test_norgate_cache/
+

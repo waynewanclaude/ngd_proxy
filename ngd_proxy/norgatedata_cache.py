@@ -7,7 +7,7 @@ from typing import Optional, List, Dict, Union, Any
 from datetime import datetime
 
 import pandas as pd
-from client import NorgateDataClient
+from .client import NorgateDataClient
 
 logger = logging.getLogger("NorgateDataCache")
 

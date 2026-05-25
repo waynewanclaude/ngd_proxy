@@ -418,20 +418,20 @@ def get_watchlist_details(watchlistname: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Norgate API Error: {str(e)}")
 
-# Add entry point to run via python server.py directly
-if __name__ == "__main__":
+# Add entry point to run via python server.py directly or CLI command
+def main():
     import uvicorn
-    # Determine bind host and port from parsed arguments if available, or fallbacks
     host_ip = "127.0.0.1"
     port_num = 8000
     
     try:
         args, unknown = parser.parse_known_args()
-        host_ip = args.host
-        port_num = args.port
-        if args.mock:
-            print("[INFO] Starting server in forced MOCK MODE.")
+        host_ip = args.host or host_ip
+        port_num = args.port or port_num
     except Exception:
         pass
         
-    uvicorn.run(app, host=host_ip, port=port_num)
+    uvicorn.run("ngd_proxy.server:app", host=host_ip, port=port_num)
+
+if __name__ == "__main__":
+    main()
