@@ -380,7 +380,76 @@ class TestNorgateDataProxyAndCache(unittest.TestCase):
         with self.assertRaises(Exception):
             self.cache.exchange_name_full("ON")
 
+    def test_12_last_database_update_time_and_cache_bypass(self):
+        """Verifies last_database_update_time parses datetime and bypasses the cache entirely."""
+        from datetime import datetime
+        # 1. Get database update time
+        dt = self.cache.last_database_update_time("us")
+        self.assertEqual(dt, datetime(2026, 5, 26, 0, 0, 0))
+
+        # 2. Check cache is bypassed (no files, no DB entries)
+        conn = sqlite3.connect(os.path.join(TEST_CACHE_DIR, "cache_index.db"))
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM cache_metadata")
+        db_count = cursor.fetchone()[0]
+        conn.close()
+        self.assertEqual(db_count, 0)
+
+        # 3. Check invalid database raises error
+        with self.assertRaises(Exception):
+            self.cache.last_database_update_time("invalid_db")
+
+    def test_13_last_price_update_time_and_cache_bypass(self):
+        """Verifies last_price_update_time parses datetime and bypasses the cache entirely."""
+        from datetime import datetime
+        # 1. Get price update time
+        dt = self.cache.last_price_update_time("TSLA")
+        self.assertEqual(dt, datetime(2026, 5, 26, 1, 0, 0))
+
+        # 2. Check cache is bypassed (no files, no DB entries)
+        conn = sqlite3.connect(os.path.join(TEST_CACHE_DIR, "cache_index.db"))
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM cache_metadata")
+        db_count = cursor.fetchone()[0]
+        conn.close()
+        self.assertEqual(db_count, 0)
+
+        # 3. Check invalid symbol raises error
+        with self.assertRaises(Exception):
+            self.cache.last_price_update_time("ON")
+
+    def test_14_asset_metadata_lookups_and_cache_bypass(self):
+        """Verifies assetid, base_type, classification, and industry index lookups with cache bypass."""
+        # 1. Get asset ID
+        aid = self.cache.assetid("TSLA")
+        self.assertEqual(aid, 1001)
+
+        # 2. Get base type
+        btype = self.cache.base_type("MSFT")
+        self.assertEqual(btype, "Stock Market")
+
+        # 3. Get classification
+        classif = self.cache.classification("TSLA", "GICS")
+        self.assertEqual(classif, "Automobile")
+
+        # 4. Get corresponding industry index
+        idx = self.cache.corresponding_industry_index("MSFT", "$SPX", 3, "TR")
+        self.assertEqual(idx, "$SP500-45")
+
+        # 5. Check cache is bypassed (no files, no DB entries)
+        conn = sqlite3.connect(os.path.join(TEST_CACHE_DIR, "cache_index.db"))
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM cache_metadata")
+        db_count = cursor.fetchone()[0]
+        conn.close()
+        self.assertEqual(db_count, 0)
+
+        # 6. Check invalid symbol raises error
+        with self.assertRaises(Exception):
+            self.cache.assetid("ON")
+
 if __name__ == "__main__":
     unittest.main()
+
 
 

@@ -561,7 +561,163 @@ def get_exchange_name_full(symbol: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Norgate API Error: {str(e)}")
 
+@app.get("/last_database_update_time", dependencies=[Depends(verify_api_key)])
+def get_last_database_update_time(database: str):
+    """
+    Retrieve the last database update time for a specific database.
+    """
+    if MOCK_MODE:
+        db_lower = str(database).lower()
+        if db_lower not in ("us", "forex"):
+            raise HTTPException(
+                status_code=404, 
+                detail=f"Database {database} not found in mock mode. Only 'us' and 'forex' are supported."
+            )
+        return {"database": db_lower, "last_database_update_time": "2026-05-26T00:00:00"}
+        
+    try:
+        dt = norgatedata.last_database_update_time(database)
+        if dt is None:
+            return {"database": database, "last_database_update_time": None}
+        return {"database": database, "last_database_update_time": dt.isoformat()}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Norgate API Error: {str(e)}")
+
+@app.get("/last_price_update_time", dependencies=[Depends(verify_api_key)])
+def get_last_price_update_time(symbol: str):
+    """
+    Retrieve the last price update time for a specific symbol.
+    """
+    if MOCK_MODE:
+        symbol_upper = str(symbol).upper()
+        if symbol_upper == "1001":
+            symbol_upper = "TSLA"
+        elif symbol_upper == "1002":
+            symbol_upper = "MSFT"
+            
+        if symbol_upper not in ("TSLA", "MSFT"):
+            raise HTTPException(
+                status_code=404, 
+                detail=f"Symbol {symbol} not found in mock mode. Only TSLA and MSFT are supported."
+            )
+        return {"symbol": symbol_upper, "last_price_update_time": "2026-05-26T01:00:00"}
+        
+    try:
+        dt = norgatedata.last_price_update_time(symbol)
+        if dt is None:
+            return {"symbol": symbol, "last_price_update_time": None}
+        return {"symbol": symbol, "last_price_update_time": dt.isoformat()}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Norgate API Error: {str(e)}")
+
+@app.get("/assetid", dependencies=[Depends(verify_api_key)])
+def get_assetid(symbol: str):
+    """
+    Retrieve the unique Norgate asset ID for a symbol.
+    """
+    if MOCK_MODE:
+        symbol_upper = str(symbol).upper()
+        if symbol_upper == "1001" or symbol_upper == "TSLA":
+            return {"symbol": symbol_upper, "assetid": 1001}
+        elif symbol_upper == "1002" or symbol_upper == "MSFT":
+            return {"symbol": symbol_upper, "assetid": 1002}
+            
+        raise HTTPException(
+            status_code=404, 
+            detail=f"Symbol {symbol} not found in mock mode. Only TSLA and MSFT are supported."
+        )
+        
+    try:
+        aid = norgatedata.assetid(symbol)
+        if aid is None:
+            raise HTTPException(status_code=404, detail=f"Asset ID for symbol {symbol} not found")
+        return {"symbol": symbol, "assetid": aid}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Norgate API Error: {str(e)}")
+
+@app.get("/base_type", dependencies=[Depends(verify_api_key)])
+def get_base_type(symbol: str):
+    """
+    Retrieve the base type of the security.
+    """
+    if MOCK_MODE:
+        symbol_upper = str(symbol).upper()
+        if symbol_upper == "1001":
+            symbol_upper = "TSLA"
+        elif symbol_upper == "1002":
+            symbol_upper = "MSFT"
+            
+        if symbol_upper not in ("TSLA", "MSFT"):
+            raise HTTPException(
+                status_code=404, 
+                detail=f"Symbol {symbol} not found in mock mode. Only TSLA and MSFT are supported."
+            )
+        return {"symbol": symbol_upper, "base_type": "Stock Market"}
+        
+    try:
+        btype = norgatedata.base_type(symbol)
+        if btype is None:
+            raise HTTPException(status_code=404, detail=f"Base type for symbol {symbol} not found")
+        return {"symbol": symbol, "base_type": btype}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Norgate API Error: {str(e)}")
+
+@app.get("/classification", dependencies=[Depends(verify_api_key)])
+def get_classification(symbol: str, schemename: str):
+    """
+    Retrieve the classification for a specific scheme.
+    """
+    if MOCK_MODE:
+        symbol_upper = str(symbol).upper()
+        if symbol_upper == "1001":
+            symbol_upper = "TSLA"
+        elif symbol_upper == "1002":
+            symbol_upper = "MSFT"
+            
+        if symbol_upper not in ("TSLA", "MSFT"):
+            raise HTTPException(
+                status_code=404, 
+                detail=f"Symbol {symbol} not found in mock mode. Only TSLA and MSFT are supported."
+            )
+        return {"symbol": symbol_upper, "classification": "Automobile" if symbol_upper == "TSLA" else "Software"}
+        
+    try:
+        classif = norgatedata.classification(symbol, schemename)
+        return {"symbol": symbol, "classification": classif}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Norgate API Error: {str(e)}")
+
+@app.get("/corresponding_industry_index", dependencies=[Depends(verify_api_key)])
+def get_corresponding_industry_index(symbol: str, indexfamilycode: str, level: int, indexreturntype: str):
+    """
+    Retrieve the symbol of the corresponding industry index.
+    """
+    if MOCK_MODE:
+        symbol_upper = str(symbol).upper()
+        if symbol_upper == "1001":
+            symbol_upper = "TSLA"
+        elif symbol_upper == "1002":
+            symbol_upper = "MSFT"
+            
+        if symbol_upper not in ("TSLA", "MSFT"):
+            raise HTTPException(
+                status_code=404, 
+                detail=f"Symbol {symbol} not found in mock mode. Only TSLA and MSFT are supported."
+            )
+        return {
+            "symbol": symbol_upper, 
+            "corresponding_industry_index": "$SP500-15" if symbol_upper == "TSLA" else "$SP500-45"
+        }
+        
+    try:
+        index_sym = norgatedata.corresponding_industry_index(symbol, indexfamilycode, level, indexreturntype)
+        return {"symbol": symbol, "corresponding_industry_index": index_sym}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Norgate API Error: {str(e)}")
+
 # Add entry point to run via python server.py directly or CLI command
+
+
 
 def main():
     import uvicorn

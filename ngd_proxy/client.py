@@ -3,6 +3,8 @@ import json
 import logging
 from io import BytesIO
 from typing import Optional, List, Dict, Union, Any
+from datetime import datetime
+
 
 import pandas as pd
 import requests
@@ -256,6 +258,74 @@ class NorgateDataClient:
         response = requests.get(url, headers=self._get_headers(), params=params, timeout=10)
         response.raise_for_status()
         return response.json().get("exchange_name_full")
+
+    def last_database_update_time(self, database: str) -> Optional[datetime]:
+        """
+        Retrieve the last database update time as a datetime object.
+        """
+        url = f"{self.base_url}/last_database_update_time"
+        params = {"database": database}
+        response = requests.get(url, headers=self._get_headers(), params=params, timeout=10)
+        response.raise_for_status()
+        val = response.json().get("last_database_update_time")
+        return datetime.fromisoformat(val) if val else None
+
+    def last_price_update_time(self, symbol: str) -> Optional[datetime]:
+        """
+        Retrieve the last price update time for a symbol as a datetime object.
+        """
+        url = f"{self.base_url}/last_price_update_time"
+        params = {"symbol": symbol}
+        response = requests.get(url, headers=self._get_headers(), params=params, timeout=10)
+        response.raise_for_status()
+        val = response.json().get("last_price_update_time")
+        return datetime.fromisoformat(val) if val else None
+
+    def assetid(self, symbol: str) -> Optional[int]:
+        """
+        Retrieve the unique Norgate asset ID for a symbol.
+        """
+        url = f"{self.base_url}/assetid"
+        params = {"symbol": symbol}
+        response = requests.get(url, headers=self._get_headers(), params=params, timeout=10)
+        response.raise_for_status()
+        return response.json().get("assetid")
+
+    def base_type(self, symbol: str) -> Optional[str]:
+        """
+        Retrieve the base type of the security.
+        """
+        url = f"{self.base_url}/base_type"
+        params = {"symbol": symbol}
+        response = requests.get(url, headers=self._get_headers(), params=params, timeout=10)
+        response.raise_for_status()
+        return response.json().get("base_type")
+
+    def classification(self, symbol: str, schemename: str) -> Optional[str]:
+        """
+        Retrieve classification category for a schemename.
+        """
+        url = f"{self.base_url}/classification"
+        params = {"symbol": symbol, "schemename": schemename}
+        response = requests.get(url, headers=self._get_headers(), params=params, timeout=10)
+        response.raise_for_status()
+        return response.json().get("classification")
+
+    def corresponding_industry_index(self, symbol: str, indexfamilycode: str, level: int, indexreturntype: str) -> Optional[str]:
+        """
+        Retrieve symbol of the corresponding industry index.
+        """
+        url = f"{self.base_url}/corresponding_industry_index"
+        params = {
+            "symbol": symbol,
+            "indexfamilycode": indexfamilycode,
+            "level": level,
+            "indexreturntype": indexreturntype
+        }
+        response = requests.get(url, headers=self._get_headers(), params=params, timeout=10)
+        response.raise_for_status()
+        return response.json().get("corresponding_industry_index")
+
 
 
 

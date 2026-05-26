@@ -505,4 +505,47 @@ class NorgateDataCache:
         """
         return self.client.exchange_name_full(symbol)
 
+    def last_database_update_time(self, database: str) -> Optional[datetime]:
+        """
+        Exposes database update time lookup.
+        Bypasses local Parquet file-caching and database indexing entirely.
+        """
+        return self.client.last_database_update_time(database)
+
+    def last_price_update_time(self, symbol: str) -> Optional[datetime]:
+        """
+        Exposes symbol price update time lookup.
+        Bypasses local Parquet file-caching and database indexing entirely.
+        """
+        return self.client.last_price_update_time(symbol)
+
+    def assetid(self, symbol: str) -> Optional[int]:
+        """
+        Exposes asset ID lookup.
+        Bypasses local Parquet file-caching and database indexing entirely.
+        """
+        return self.client.assetid(symbol)
+
+    def base_type(self, symbol: str) -> Optional[str]:
+        """
+        Exposes base type lookup.
+        Bypasses local Parquet file-caching and database indexing entirely.
+        """
+        return self.client.base_type(symbol)
+
+    def classification(self, symbol: str, schemename: str) -> Optional[str]:
+        """
+        Exposes classification lookup.
+        Bypasses local Parquet file-caching and database indexing entirely.
+        """
+        return self.client.classification(symbol, schemename)
+
+    def corresponding_industry_index(self, symbol: str, indexfamilycode: str, level: int, indexreturntype: str) -> Optional[str]:
+        """
+        Exposes corresponding industry index lookup.
+        Bypasses local Parquet file-caching and database indexing entirely.
+        """
+        return self.client.corresponding_industry_index(symbol, indexfamilycode, level, indexreturntype)
+
+
 

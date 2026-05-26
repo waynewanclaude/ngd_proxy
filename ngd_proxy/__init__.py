@@ -1,7 +1,9 @@
 import os
 from enum import IntEnum, Enum
 from typing import Optional, List, Dict, Any, Union
+from datetime import datetime
 import pandas as pd
+
 
 from .client import NorgateDataClient
 from .norgatedata_cache import NorgateDataCache
@@ -102,6 +104,24 @@ def exchange_name(symbol: str) -> Optional[str]:
 def exchange_name_full(symbol: str) -> Optional[str]:
     return _get_cache().exchange_name_full(symbol)
 
+def last_database_update_time(database: str) -> Optional[datetime]:
+    return _get_cache().last_database_update_time(database)
+
+def last_price_update_time(symbol: str) -> Optional[datetime]:
+    return _get_cache().last_price_update_time(symbol)
+
+def assetid(symbol: str) -> Optional[int]:
+    return _get_cache().assetid(symbol)
+
+def base_type(symbol: str) -> Optional[str]:
+    return _get_cache().base_type(symbol)
+
+def classification(symbol: str, schemename: str) -> Optional[str]:
+    return _get_cache().classification(symbol, schemename)
+
+def corresponding_industry_index(symbol: str, indexfamilycode: str, level: int, indexreturntype: str) -> Optional[str]:
+    return _get_cache().corresponding_industry_index(symbol, indexfamilycode, level, indexreturntype)
+
 __all__ = [
     "NorgateDataClient",
     "NorgateDataCache",
@@ -118,6 +138,13 @@ __all__ = [
     "security_name",
     "fundamental",
     "exchange_name",
-    "exchange_name_full"
+    "exchange_name_full",
+    "last_database_update_time",
+    "last_price_update_time",
+    "assetid",
+    "base_type",
+    "classification",
+    "corresponding_industry_index"
 ]
+
 

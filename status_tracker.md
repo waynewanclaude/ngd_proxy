@@ -25,11 +25,11 @@ This database tracks the implementation status of all 26 official Norgate Data A
 | 8 | `security_name` | Metadata | **`YES`** | Fully implemented, direct pass-through, bypasses cache, passes mock & bypass tests. |
 | 9 | `exchange_name` | Metadata | **`YES`** | Fully implemented, direct pass-through, bypasses cache, passes mock & bypass tests. |
 | 10 | `exchange_name_full` | Metadata | **`YES`** | Fully implemented, direct pass-through, bypasses cache, passes mock & bypass tests. |
-| 11 | `base_type` | Metadata | **`NO`** | Pending direct pass-through lookup (no cache required). |
+| 11 | `base_type` | Metadata | **`YES`** | Fully implemented, direct pass-through, bypasses cache, passes mock & bypass tests. |
 | 12 | `subtype1` (incl. `2` and `3`) | Metadata | **`NO`** | Pending direct pass-through lookup (no cache required). |
-| 13 | `assetid` | Metadata | **`NO`** | Pending direct pass-through lookup (no cache required). |
-| 14 | `classification` | Classifications | **`NO`** | Pending direct pass-through lookup (no cache required). |
-| 15 | `corresponding_industry_index` | Classifications | **`NO`** | Pending direct pass-through lookup (no cache required). |
+| 13 | `assetid` | Metadata | **`YES`** | Fully implemented, direct pass-through, bypasses cache, passes mock & bypass tests. |
+| 14 | `classification` | Classifications | **`YES`** | Fully implemented, direct pass-through, bypasses cache, passes mock & bypass tests. |
+| 15 | `corresponding_industry_index` | Classifications | **`YES`** | Fully implemented, direct pass-through, bypasses cache, passes mock & bypass tests. |
 | 16 | `fundamental` | Fundamentals | **`YES`** | Fully implemented, direct pass-through, bypasses cache, passes mock & bypass tests. |
 | 17 | `watchlists` | Watchlists | **`YES`** | Implemented, routes through proxy client to host server. |
 | 18 | `watchlist` | Watchlists | **`YES`** | Fully implemented, direct native mapping, bypasses cache, passes mock & bypass tests. |
@@ -39,5 +39,5 @@ This database tracks the implementation status of all 26 official Norgate Data A
 | 22 | `tick_value` | Futures | **`NO`** | Pending direct pass-through lookup (no cache required). |
 | 23 | `lowest_ever_tick_size` | Futures | **`NO`** | Pending direct pass-through lookup (no cache required). |
 | 24 | `futures_market_session_info` | Futures | **`NO`** | Pending direct pass-through lookup (no cache required). |
-| 25 | `last_database_update_time` | Database Property | **`NO`** | Pending direct pass-through lookup (no cache required). |
-| 26 | `last_price_update_time` | Database Property | **`NO`** | Pending direct pass-through lookup (no cache required). |
+| 25 | `last_database_update_time` | Database Property | **`YES`** | Fully implemented, direct pass-through, bypasses cache, passes mock & bypass tests. |
+| 26 | `last_price_update_time` | Database Property | **`YES`** | Fully implemented, direct pass-through, bypasses cache, passes mock & bypass tests. |
