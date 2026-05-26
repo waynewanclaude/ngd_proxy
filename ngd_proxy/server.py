@@ -232,8 +232,11 @@ def get_price_timeseries(
     Supports JSON or binary Parquet streaming via Accept header.
     """
     if MOCK_MODE:
+        symbol_upper = str(symbol).upper()
+        if symbol_upper not in ("AAPL", "MSFT", "1001", "1002"):
+            raise HTTPException(status_code=404, detail=f"Symbol {symbol} not found in mock mode. Only AAPL and MSFT are supported.")
         df = generate_mock_price_timeseries(
-            symbol=symbol,
+            symbol=symbol_upper,
             start_date=start_date or "2020-01-01",
             end_date=end_date
         )
@@ -286,8 +289,11 @@ def get_index_constituent_timeseries(
     Fetch index constituent timeseries.
     """
     if MOCK_MODE:
+        symbol_upper = str(symbol).upper()
+        if symbol_upper not in ("AAPL", "MSFT", "1001", "1002"):
+            raise HTTPException(status_code=404, detail=f"Symbol {symbol} not found in mock mode. Only AAPL and MSFT are supported.")
         df = generate_mock_constituent_timeseries(
-            symbol=symbol,
+            symbol=symbol_upper,
             indexname=indexname,
             start_date=start_date or "2020-01-01",
             end_date=end_date
@@ -325,8 +331,11 @@ def get_dividend_yield_timeseries(
     Fetch dividend yield timeseries.
     """
     if MOCK_MODE:
+        symbol_upper = str(symbol).upper()
+        if symbol_upper not in ("AAPL", "MSFT", "1001", "1002"):
+            raise HTTPException(status_code=404, detail=f"Symbol {symbol} not found in mock mode. Only AAPL and MSFT are supported.")
         df = generate_mock_dividend_timeseries(
-            symbol=symbol,
+            symbol=symbol_upper,
             start_date=start_date or "2020-01-01",
             end_date=end_date
         )
@@ -369,9 +378,7 @@ def get_watchlist_symbols(watchlistname: str):
     Retrieve just the symbols in a watchlist.
     """
     if MOCK_MODE:
-        if watchlistname == "S&P 500":
-            return ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META"]
-        return ["AAPL", "MSFT", "GOOGL"]
+        return ["AAPL", "MSFT"]
         
     try:
         symbols = norgatedata.watchlist_symbols(watchlistname)
@@ -390,7 +397,6 @@ def get_watchlist_details(watchlistname: str):
         return [
             {"assetid": 1001, "symbol": "AAPL", "name": "Apple Inc."},
             {"assetid": 1002, "symbol": "MSFT", "name": "Microsoft Corporation"},
-            {"assetid": 1003, "symbol": "GOOGL", "name": "Alphabet Inc."},
         ]
         
     try:

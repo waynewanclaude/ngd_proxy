@@ -20,8 +20,8 @@ This sub-plan outlines the exact steps and architectural layers to implement the
   - Middleware: Protected by the `verify_api_key` dependency.
 - **Mock Mode Handling (`MOCK_MODE = True`)**:
   - Implement a synthetic Refinitiv/LSEG generator:
-    - Pre-defined accurate mock records for core symbols (e.g., for `ON` PE ratios, book values, etc.).
-    - Dynamic random generation based on `fieldname` suffix/prefix for other symbols (e.g., returning numeric values for `pe_ratio`, `eps`, or strings for descriptive fields) with a static mock date (e.g., `"2025-12-31"`).
+    - Pre-defined accurate mock records for core symbols (`MSFT` and `AAPL` only).
+    - If the symbol is not `AAPL` or `MSFT` (or their asset IDs `1001` or `1002`), it raises an HTTP 404 error.
 - **Real Mode Handling (`MOCK_MODE = False`)**:
   - Call the native Windows library:
     ```python
@@ -72,9 +72,9 @@ This sub-plan outlines the exact steps and architectural layers to implement the
 
 ### 1. Mock Data Validation
 Add a dedicated test case `test_fundamental_mock_data` in `tests/test_cache.py`:
-- Call `norgatedata.fundamental("ON", "pe")`.
+- Call `norgatedata.fundamental("MSFT", "pe")`.
 - Assert that it returns a valid tuple containing a float (e.g. `24.5`) and a date string (e.g. `"2025-12-31"`).
-- Call a non-existent symbol/field and assert it handles `None, None` gracefully.
+- Call an invalid symbol like `"ON"` and assert it raises an error (since only AAPL and MSFT are supported in mock mode).
 
 ### 2. Caching Bypass Validation
 Add a dedicated test case `test_fundamental_cache_bypass` in `tests/test_cache.py`:

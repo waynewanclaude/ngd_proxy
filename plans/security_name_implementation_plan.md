@@ -18,19 +18,14 @@ This sub-plan outlines the exact steps and architectural layers to implement the
   - Endpoint: `/security_name`
   - Parameters: `symbol` (string or integer asset ID).
   - Middleware: Protected by the `verify_api_key` dependency.
-- **Mock Mode Handling (`MOCK_MODE = True`)**:
   - Match against a mock database dictionary:
     ```python
     mock_names = {
-        "ON": "ON Semiconductor Corporation",
         "AAPL": "Apple Inc. Common Stock",
-        "MSFT": "Microsoft Corporation Common Stock",
-        "GOOGL": "Alphabet Inc. Class A Common Stock",
-        "NVDA": "NVIDIA Corporation Common Stock",
-        "AMZN": "Amazon.com, Inc. Common Stock"
+        "MSFT": "Microsoft Corporation Common Stock"
     }
     ```
-  - Returns `{"symbol": symbol, "security_name": name}`.
+  - If the symbol is not `AAPL` or `MSFT` (or their asset IDs `1001` or `1002`), it raises an HTTP 404 error.
 - **Real Mode Handling (`MOCK_MODE = False`)**:
   - Call the native Windows library:
     ```python
@@ -76,8 +71,9 @@ This sub-plan outlines the exact steps and architectural layers to implement the
 
 ### 1. Mock Data Validation
 Add a dedicated test case `test_security_name_mock_data` in `tests/test_cache.py`:
-- Call `norgatedata.security_name("ON")`.
-- Assert that it returns `"ON Semiconductor Corporation"`.
+- Call `norgatedata.security_name("MSFT")`.
+- Assert that it returns `"Microsoft Corporation Common Stock"`.
+- Call `norgatedata.security_name("ON")` and assert it raises an error (since only AAPL and MSFT are supported in mock mode).
 
 ### 2. Caching Bypass Validation
 Add a dedicated test case `test_security_name_cache_bypass` in `tests/test_cache.py`:
