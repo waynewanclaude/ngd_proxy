@@ -135,7 +135,7 @@ class TestNorgateDataProxyAndCache(unittest.TestCase):
 
     def test_03_price_incremental_sync_tail(self):
         """Asserts smart range-merging when querying recent missing dates (gap at the end)."""
-        symbol = "AAPL"
+        symbol = "TSLA"
         
         # Initial seeding: Jan 1 to Jan 10
         self.cache.price_timeseries(symbol, "TOTALRETURN", "2025-01-01", "2025-01-10")
@@ -148,7 +148,7 @@ class TestNorgateDataProxyAndCache(unittest.TestCase):
         # Check that metadata in SQLite was updated to end on Jan 15
         conn = sqlite3.connect(os.path.join(TEST_CACHE_DIR, "cache_index.db"))
         cursor = conn.cursor()
-        cursor.execute("SELECT start_date, end_date, access_count FROM cache_metadata WHERE symbol='AAPL'")
+        cursor.execute("SELECT start_date, end_date, access_count FROM cache_metadata WHERE symbol='TSLA'")
         row = cursor.fetchone()
         conn.close()
         
@@ -182,7 +182,7 @@ class TestNorgateDataProxyAndCache(unittest.TestCase):
 
     def test_05_index_constituent_caching(self):
         """Tests unified caching specifically for historical index constituent membership."""
-        symbol = "AAPL"
+        symbol = "TSLA"
         index = "S&P 500"
         
         # 1. Miss
@@ -214,8 +214,8 @@ class TestNorgateDataProxyAndCache(unittest.TestCase):
         # Cache 4 different combinations. Each file will be ~2-5KB, easily blowing the 8KB limit
         # This will trigger eviction on subsequent writes!
         keys = [
-            ("AAPL", "TOTALRETURN"),
-            ("AAPL", "CAPITAL"),
+            ("TSLA", "TOTALRETURN"),
+            ("TSLA", "CAPITAL"),
             ("MSFT", "TOTALRETURN"),
             ("MSFT", "CAPITAL")
         ]
@@ -231,12 +231,12 @@ class TestNorgateDataProxyAndCache(unittest.TestCase):
         conn.close()
         
         # Assert that some of the oldest cached keys have been evicted
-        self.assertNotIn(("AAPL", "TOTALRETURN"), cached_keys)
+        self.assertNotIn(("TSLA", "TOTALRETURN"), cached_keys)
         self.assertIn(("MSFT", "CAPITAL"), cached_keys)
         
         # Confirm that the physical file for oldest was actually removed from disk
-        aapl_tr_path = os.path.join(TEST_CACHE_DIR, "price_AAPL_TOTALRETURN.parquet")
-        self.assertFalse(os.path.exists(aapl_tr_path))
+        tsla_tr_path = os.path.join(TEST_CACHE_DIR, "price_TSLA_TOTALRETURN.parquet")
+        self.assertFalse(os.path.exists(tsla_tr_path))
 
 
     def test_07_security_name_mock_data_and_cache_bypass(self):
@@ -283,8 +283,8 @@ class TestNorgateDataProxyAndCache(unittest.TestCase):
         self.assertEqual(val, 24.5)
         self.assertEqual(dt, "2025-12-31")
 
-        val2, dt2 = self.cache.fundamental("AAPL", "eps")
-        self.assertEqual(val2, 6.5)
+        val2, dt2 = self.cache.fundamental("TSLA", "eps")
+        self.assertEqual(val2, 3.2)
         self.assertEqual(dt2, "2025-12-31")
 
         # 3. Check cache is bypassed (no files, no DB entries)
@@ -309,7 +309,7 @@ class TestNorgateDataProxyAndCache(unittest.TestCase):
         # 1. Get watchlist details
         details = self.cache.watchlist("Nasdaq 100")
         self.assertTrue(len(details) > 0)
-        self.assertEqual(details[0]["symbol"], "AAPL")
+        self.assertEqual(details[0]["symbol"], "TSLA")
         self.assertEqual(details[1]["symbol"], "MSFT")
 
         # 2. Check no DB entry was made

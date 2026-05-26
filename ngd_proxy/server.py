@@ -233,8 +233,8 @@ def get_price_timeseries(
     """
     if MOCK_MODE:
         symbol_upper = str(symbol).upper()
-        if symbol_upper not in ("AAPL", "MSFT", "1001", "1002"):
-            raise HTTPException(status_code=404, detail=f"Symbol {symbol} not found in mock mode. Only AAPL and MSFT are supported.")
+        if symbol_upper not in ("TSLA", "MSFT", "1001", "1002"):
+            raise HTTPException(status_code=404, detail=f"Symbol {symbol} not found in mock mode. Only TSLA and MSFT are supported.")
         df = generate_mock_price_timeseries(
             symbol=symbol_upper,
             start_date=start_date or "2020-01-01",
@@ -290,8 +290,8 @@ def get_index_constituent_timeseries(
     """
     if MOCK_MODE:
         symbol_upper = str(symbol).upper()
-        if symbol_upper not in ("AAPL", "MSFT", "1001", "1002"):
-            raise HTTPException(status_code=404, detail=f"Symbol {symbol} not found in mock mode. Only AAPL and MSFT are supported.")
+        if symbol_upper not in ("TSLA", "MSFT", "1001", "1002"):
+            raise HTTPException(status_code=404, detail=f"Symbol {symbol} not found in mock mode. Only TSLA and MSFT are supported.")
         df = generate_mock_constituent_timeseries(
             symbol=symbol_upper,
             indexname=indexname,
@@ -332,8 +332,8 @@ def get_dividend_yield_timeseries(
     """
     if MOCK_MODE:
         symbol_upper = str(symbol).upper()
-        if symbol_upper not in ("AAPL", "MSFT", "1001", "1002"):
-            raise HTTPException(status_code=404, detail=f"Symbol {symbol} not found in mock mode. Only AAPL and MSFT are supported.")
+        if symbol_upper not in ("TSLA", "MSFT", "1001", "1002"):
+            raise HTTPException(status_code=404, detail=f"Symbol {symbol} not found in mock mode. Only TSLA and MSFT are supported.")
         df = generate_mock_dividend_timeseries(
             symbol=symbol_upper,
             start_date=start_date or "2020-01-01",
@@ -378,7 +378,7 @@ def get_watchlist_symbols(watchlistname: str):
     Retrieve just the symbols in a watchlist.
     """
     if MOCK_MODE:
-        return ["AAPL", "MSFT"]
+        return ["TSLA", "MSFT"]
         
     try:
         symbols = norgatedata.watchlist_symbols(watchlistname)
@@ -395,7 +395,7 @@ def get_watchlist_details(watchlistname: str):
     """
     if MOCK_MODE:
         return [
-            {"assetid": 1001, "symbol": "AAPL", "name": "Apple Inc."},
+            {"assetid": 1001, "symbol": "TSLA", "name": "Tesla Inc."},
             {"assetid": 1002, "symbol": "MSFT", "name": "Microsoft Corporation"},
         ]
         
@@ -440,18 +440,18 @@ def get_security_name(symbol: str):
     if MOCK_MODE:
         symbol_upper = str(symbol).upper()
         if symbol_upper == "1001":
-            symbol_upper = "AAPL"
+            symbol_upper = "TSLA"
         elif symbol_upper == "1002":
             symbol_upper = "MSFT"
             
         mock_names = {
-            "AAPL": "Apple Inc. Common Stock",
+            "TSLA": "Tesla Inc. Common Stock",
             "MSFT": "Microsoft Corporation Common Stock"
         }
         if symbol_upper not in mock_names:
             raise HTTPException(
                 status_code=404, 
-                detail=f"Symbol {symbol} not found in mock mode. Only AAPL and MSFT are supported."
+                detail=f"Symbol {symbol} not found in mock mode. Only TSLA and MSFT are supported."
             )
         return {"symbol": symbol_upper, "security_name": mock_names[symbol_upper]}
         
@@ -471,23 +471,23 @@ def get_fundamental(symbol: str, fieldname: str, datetimeformat: Optional[str] =
     if MOCK_MODE:
         symbol_upper = str(symbol).upper()
         if symbol_upper == "1001":
-            symbol_upper = "AAPL"
+            symbol_upper = "TSLA"
         elif symbol_upper == "1002":
             symbol_upper = "MSFT"
             
-        if symbol_upper not in ("AAPL", "MSFT"):
+        if symbol_upper not in ("TSLA", "MSFT"):
             raise HTTPException(
                 status_code=404, 
-                detail=f"Symbol {symbol} not found in mock mode. Only AAPL and MSFT are supported."
+                detail=f"Symbol {symbol} not found in mock mode. Only TSLA and MSFT are supported."
             )
             
         fieldname_lower = fieldname.lower()
         if "pe" in fieldname_lower or "price_to_earnings" in fieldname_lower:
-            val = 28.2 if symbol_upper == "AAPL" else 24.5
+            val = 45.8 if symbol_upper == "TSLA" else 24.5
         elif "eps" in fieldname_lower:
-            val = 6.5 if symbol_upper == "AAPL" else 11.2
+            val = 3.2 if symbol_upper == "TSLA" else 11.2
         else:
-            val = 150.0
+            val = 200.0
             
         return {"value": val, "date": "2025-12-31"}
         
