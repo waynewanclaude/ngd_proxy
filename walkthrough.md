@@ -67,12 +67,18 @@ To maintain compatibility with wealth-lab, backtrader, and other advanced tradin
    - `subtype1(symbol)`: Returns the broad security subtype level (e.g. `"Equity"`).
    - `subtype2(symbol)`: Returns the intermediate security subtype level (e.g. `"Operating Company"`).
    - `subtype3(symbol)`: Returns the granular/final security subtype level (e.g. `"Common Stock"`).
+5. **Futures-Specific Specifications:**
+   - `margin(symbol)`: Returns the current initial margin requirement for a contract/market (e.g. `18000.0` for Eurex DAX continuous futures `&FDAX`).
+   - `point_value(symbol)`: Returns the whole point movement value (e.g. `25.0` for `&FDAX`).
+   - `tick_value(symbol)`: Returns the value of a single tick (e.g. `12.5` for `&FDAX` or `&ES`).
+   - `lowest_ever_tick_size(symbol)`: Returns the historically lowest minimum price increment (e.g. `0.25` for `&ES`).
+   - `futures_market_session_info(symbol)`: Returns the market session trading category (e.g. `"Combined"`).
 
 ---
 
 ## 🧪 Verification & Test Results
 
-The test suite in `tests/test_cache.py` imports directly from the `ngd_proxy` package namespace. We have successfully expanded it from 6 to **15 rigorous automated integration tests**, verifying both core timeseries Parquet caches and the caching-bypass behavior of all newly implemented metadata fields.
+The test suite in `tests/test_cache.py` imports directly from the `ngd_proxy` package namespace. We have successfully expanded it from 6 to **16 rigorous automated integration tests**, verifying both core timeseries Parquet caches and the caching-bypass behavior of all newly implemented metadata fields.
 
 Running the test suite via:
 ```bash
@@ -81,7 +87,7 @@ python -m unittest tests/test_cache.py
 
 Produces flawless verification results:
 ```text
-Ran 15 tests in 2.750s
+Ran 16 tests in 3.402s
 
 OK
 [WARNING] Could not import native 'norgatedata' library. Falling back to MOCK MODE.
@@ -103,15 +109,18 @@ OK
 13. **`test_13_last_price_update_time_and_cache_bypass`**: Asserted symbol price update time datetime parsing and cache bypass.
 14. **`test_14_asset_metadata_lookups_and_cache_bypass`**: Asserted correct mock outputs for `assetid`, `base_type`, `classification`, and `corresponding_industry_index` lookups and verified cache bypass.
 15. **`test_15_subtype_lookups_and_cache_bypass`**: Asserted correct hierarchical output for `subtype1`, `subtype2`, and `subtype3` lookups and verified cache bypass.
+16. **`test_16_futures_metadata_lookups_and_cache_bypass`**: Asserted correct futures specifications (`margin`, `point_value`, `tick_value`, `lowest_ever_tick_size`, and `futures_market_session_info`) for `&FDAX` and `&ES` continuous futures symbols, returning `None` for stocks, and verified cache bypass.
 
 ---
 
 ## 📓 Interactive Notebooks
 
-We created beautiful verification notebooks mapping our full suite of functionalities (using `TSLA` as the primary mock symbol alongside `MSFT`). You can run these notebooks inside Jupyter to see everything work interactively:
+We created beautiful verification notebooks mapping our full suite of functionalities (using `TSLA` as the primary mock symbol alongside `MSFT` and `&FDAX`/`&ES` for futures). You can run these notebooks inside Jupyter to see everything work interactively:
 - **[`test__price_timeseries.ipynb`](file:///c:/Projects/claudeai/gemini/ngd_proxy/test__price_timeseries.ipynb):** High-speed timeseries fetching, caching, and timing metrics.
 - **[`test__security_name.ipynb`](file:///c:/Projects/claudeai/gemini/ngd_proxy/test__security_name.ipynb):** Security names, fundamental fields, and watchlist details.
 - **[`test__exchange_name.ipynb`](file:///c:/Projects/claudeai/gemini/ngd_proxy/test__exchange_name.ipynb):** Short and full exchange names.
 - **[`test__update_time.ipynb`](file:///c:/Projects/claudeai/gemini/ngd_proxy/test__update_time.ipynb):** EOD database partition and symbol price update datetimes.
 - **[`test__asset_metadata.ipynb`](file:///c:/Projects/claudeai/gemini/ngd_proxy/test__asset_metadata.ipynb):** Asset IDs, GICS classification, base types, and corresponding industry indices.
 - **[`test__subtype.ipynb`](file:///c:/Projects/claudeai/gemini/ngd_proxy/test__subtype.ipynb):** Hierarchical classification subtypes (`subtype1`, `subtype2`, `subtype3`).
+- **[`test__futures_metadata.ipynb`](file:///c:/Projects/claudeai/gemini/ngd_proxy/test__futures_metadata.ipynb):** Futures-specific specification lookups (`margin`, `point_value`, `tick_value`, `lowest_ever_tick_size`, `futures_market_session_info`).
+

@@ -132,6 +132,21 @@ def subtype2(symbol: str) -> Optional[str]:
 def subtype3(symbol: str) -> Optional[str]:
     return _get_cache().subtype3(symbol)
 
+def margin(symbol: str) -> Optional[float]:
+    return _get_cache().margin(symbol)
+
+def point_value(symbol: str) -> Optional[float]:
+    return _get_cache().point_value(symbol)
+
+def tick_value(symbol: str) -> Optional[float]:
+    return _get_cache().tick_value(symbol)
+
+def lowest_ever_tick_size(symbol: str) -> Optional[float]:
+    return _get_cache().lowest_ever_tick_size(symbol)
+
+def futures_market_session_info(symbol: str) -> Optional[str]:
+    return _get_cache().futures_market_session_info(symbol)
+
 __all__ = [
     "NorgateDataClient",
     "NorgateDataCache",
@@ -157,8 +172,14 @@ __all__ = [
     "corresponding_industry_index",
     "subtype1",
     "subtype2",
-    "subtype3"
+    "subtype3",
+    "margin",
+    "point_value",
+    "tick_value",
+    "lowest_ever_tick_size",
+    "futures_market_session_info"
 ]
+
 
 
 

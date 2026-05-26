@@ -363,6 +363,57 @@ class NorgateDataClient:
         response.raise_for_status()
         return response.json().get("subtype3")
 
+    def margin(self, symbol: str) -> Optional[float]:
+        """
+        Retrieve current margin requirement of the futures contract/market.
+        """
+        url = f"{self.base_url}/margin"
+        params = {"symbol": symbol}
+        response = requests.get(url, headers=self._get_headers(), params=params, timeout=10)
+        response.raise_for_status()
+        return response.json().get("margin")
+
+    def point_value(self, symbol: str) -> Optional[float]:
+        """
+        Retrieve point value of the futures contract/market.
+        """
+        url = f"{self.base_url}/point_value"
+        params = {"symbol": symbol}
+        response = requests.get(url, headers=self._get_headers(), params=params, timeout=10)
+        response.raise_for_status()
+        return response.json().get("point_value")
+
+    def tick_value(self, symbol: str) -> Optional[float]:
+        """
+        Retrieve tick value of the futures contract/market.
+        """
+        url = f"{self.base_url}/tick_value"
+        params = {"symbol": symbol}
+        response = requests.get(url, headers=self._get_headers(), params=params, timeout=10)
+        response.raise_for_status()
+        return response.json().get("tick_value")
+
+    def lowest_ever_tick_size(self, symbol: str) -> Optional[float]:
+        """
+        Retrieve historically lowest ever tick size of the futures contract/market.
+        """
+        url = f"{self.base_url}/lowest_ever_tick_size"
+        params = {"symbol": symbol}
+        response = requests.get(url, headers=self._get_headers(), params=params, timeout=10)
+        response.raise_for_status()
+        return response.json().get("lowest_ever_tick_size")
+
+    def futures_market_session_info(self, symbol: str) -> Optional[str]:
+        """
+        Retrieve market trading session info of the futures contract/market.
+        """
+        url = f"{self.base_url}/futures_market_session_info"
+        params = {"symbol": symbol}
+        response = requests.get(url, headers=self._get_headers(), params=params, timeout=10)
+        response.raise_for_status()
+        return response.json().get("futures_market_session_info")
+
+
 
 
 

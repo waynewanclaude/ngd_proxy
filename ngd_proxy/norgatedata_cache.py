@@ -569,6 +569,42 @@ class NorgateDataCache:
         """
         return self.client.subtype3(symbol)
 
+    def margin(self, symbol: str) -> Optional[float]:
+        """
+        Exposes current margin requirement of futures contract/market.
+        Bypasses local Parquet file-caching and database indexing entirely.
+        """
+        return self.client.margin(symbol)
+
+    def point_value(self, symbol: str) -> Optional[float]:
+        """
+        Exposes point value of futures contract/market.
+        Bypasses local Parquet file-caching and database indexing entirely.
+        """
+        return self.client.point_value(symbol)
+
+    def tick_value(self, symbol: str) -> Optional[float]:
+        """
+        Exposes tick value of futures contract/market.
+        Bypasses local Parquet file-caching and database indexing entirely.
+        """
+        return self.client.tick_value(symbol)
+
+    def lowest_ever_tick_size(self, symbol: str) -> Optional[float]:
+        """
+        Exposes historically lowest ever tick size of futures contract/market.
+        Bypasses local Parquet file-caching and database indexing entirely.
+        """
+        return self.client.lowest_ever_tick_size(symbol)
+
+    def futures_market_session_info(self, symbol: str) -> Optional[str]:
+        """
+        Exposes trading session info of futures contract/market.
+        Bypasses local Parquet file-caching and database indexing entirely.
+        """
+        return self.client.futures_market_session_info(symbol)
+
+
 
 
 

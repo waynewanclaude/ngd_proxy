@@ -34,10 +34,10 @@ This database tracks the implementation status of all 26 official Norgate Data A
 | 17 | `watchlists` | Watchlists | **`YES`** | Implemented, routes through proxy client to host server. |
 | 18 | `watchlist` | Watchlists | **`YES`** | Fully implemented, direct native mapping, bypasses cache, passes mock & bypass tests. |
 | 19 | `watchlist_symbols` | Watchlists | **`YES`** | Implemented, routes through proxy client to host server. |
-| 20 | `margin` | Futures | **`NO`** | Pending direct pass-through lookup (no cache required). |
-| 21 | `point_value` | Futures | **`NO`** | Pending direct pass-through lookup (no cache required). |
-| 22 | `tick_value` | Futures | **`NO`** | Pending direct pass-through lookup (no cache required). |
-| 23 | `lowest_ever_tick_size` | Futures | **`NO`** | Pending direct pass-through lookup (no cache required). |
-| 24 | `futures_market_session_info` | Futures | **`NO`** | Pending direct pass-through lookup (no cache required). |
+| 20 | `margin` | Futures | **`YES`** | Fully implemented, direct pass-through, bypasses cache, passes mock & bypass tests. |
+| 21 | `point_value` | Futures | **`YES`** | Fully implemented, direct pass-through, bypasses cache, passes mock & bypass tests. |
+| 22 | `tick_value` | Futures | **`YES`** | Fully implemented, direct pass-through, bypasses cache, passes mock & bypass tests. |
+| 23 | `lowest_ever_tick_size` | Futures | **`YES`** | Fully implemented, direct pass-through, bypasses cache, passes mock & bypass tests. |
+| 24 | `futures_market_session_info` | Futures | **`YES`** | Fully implemented, direct pass-through, bypasses cache, passes mock & bypass tests. |
 | 25 | `last_database_update_time` | Database Property | **`YES`** | Fully implemented, direct pass-through, bypasses cache, passes mock & bypass tests. |
 | 26 | `last_price_update_time` | Database Property | **`YES`** | Fully implemented, direct pass-through, bypasses cache, passes mock & bypass tests. |

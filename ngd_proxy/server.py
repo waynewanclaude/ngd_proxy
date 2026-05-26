@@ -814,6 +814,131 @@ def get_subtype3(symbol: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Norgate API Error: {str(e)}")
 
+@app.get("/margin", dependencies=[Depends(verify_api_key)])
+def get_margin(symbol: str):
+    """
+    Retrieve the current margin requirement of the futures contract/market.
+    """
+    if MOCK_MODE:
+        symbol_upper = str(symbol).upper()
+        if symbol_upper in ("2001", "&FDAX", "FDAX"):
+            return {"symbol": symbol_upper, "margin": 18000.0}
+        elif symbol_upper in ("2002", "&ES", "ES"):
+            return {"symbol": symbol_upper, "margin": 12000.0}
+        elif symbol_upper in ("1001", "1002", "TSLA", "MSFT"):
+            return {"symbol": symbol_upper, "margin": None}
+        raise HTTPException(
+            status_code=404, 
+            detail=f"Symbol {symbol} not found in mock mode. Supported are TSLA, MSFT, &FDAX, &ES."
+        )
+        
+    try:
+        resolved_sym = resolve_symbol(symbol)
+        val = norgatedata.margin(resolved_sym)
+        return {"symbol": symbol, "margin": val}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Norgate API Error: {str(e)}")
+
+@app.get("/point_value", dependencies=[Depends(verify_api_key)])
+def get_point_value(symbol: str):
+    """
+    Retrieve the point value of the futures contract/market.
+    """
+    if MOCK_MODE:
+        symbol_upper = str(symbol).upper()
+        if symbol_upper in ("2001", "&FDAX", "FDAX"):
+            return {"symbol": symbol_upper, "point_value": 25.0}
+        elif symbol_upper in ("2002", "&ES", "ES"):
+            return {"symbol": symbol_upper, "point_value": 50.0}
+        elif symbol_upper in ("1001", "1002", "TSLA", "MSFT"):
+            return {"symbol": symbol_upper, "point_value": None}
+        raise HTTPException(
+            status_code=404, 
+            detail=f"Symbol {symbol} not found in mock mode. Supported are TSLA, MSFT, &FDAX, &ES."
+        )
+        
+    try:
+        resolved_sym = resolve_symbol(symbol)
+        val = norgatedata.point_value(resolved_sym)
+        return {"symbol": symbol, "point_value": val}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Norgate API Error: {str(e)}")
+
+@app.get("/tick_value", dependencies=[Depends(verify_api_key)])
+def get_tick_value(symbol: str):
+    """
+    Retrieve the tick value of the futures contract/market.
+    """
+    if MOCK_MODE:
+        symbol_upper = str(symbol).upper()
+        if symbol_upper in ("2001", "&FDAX", "FDAX"):
+            return {"symbol": symbol_upper, "tick_value": 12.5}
+        elif symbol_upper in ("2002", "&ES", "ES"):
+            return {"symbol": symbol_upper, "tick_value": 12.5}
+        elif symbol_upper in ("1001", "1002", "TSLA", "MSFT"):
+            return {"symbol": symbol_upper, "tick_value": None}
+        raise HTTPException(
+            status_code=404, 
+            detail=f"Symbol {symbol} not found in mock mode. Supported are TSLA, MSFT, &FDAX, &ES."
+        )
+        
+    try:
+        resolved_sym = resolve_symbol(symbol)
+        val = norgatedata.tick_value(resolved_sym)
+        return {"symbol": symbol, "tick_value": val}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Norgate API Error: {str(e)}")
+
+@app.get("/lowest_ever_tick_size", dependencies=[Depends(verify_api_key)])
+def get_lowest_ever_tick_size(symbol: str):
+    """
+    Retrieve the historically lowest ever tick size of the futures contract/market.
+    """
+    if MOCK_MODE:
+        symbol_upper = str(symbol).upper()
+        if symbol_upper in ("2001", "&FDAX", "FDAX"):
+            return {"symbol": symbol_upper, "lowest_ever_tick_size": 0.5}
+        elif symbol_upper in ("2002", "&ES", "ES"):
+            return {"symbol": symbol_upper, "lowest_ever_tick_size": 0.25}
+        elif symbol_upper in ("1001", "1002", "TSLA", "MSFT"):
+            return {"symbol": symbol_upper, "lowest_ever_tick_size": None}
+        raise HTTPException(
+            status_code=404, 
+            detail=f"Symbol {symbol} not found in mock mode. Supported are TSLA, MSFT, &FDAX, &ES."
+        )
+        
+    try:
+        resolved_sym = resolve_symbol(symbol)
+        val = norgatedata.lowest_ever_tick_size(resolved_sym)
+        return {"symbol": symbol, "lowest_ever_tick_size": val}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Norgate API Error: {str(e)}")
+
+@app.get("/futures_market_session_info", dependencies=[Depends(verify_api_key)])
+def get_futures_market_session_info(symbol: str):
+    """
+    Retrieve the market trading session info of the futures contract/market.
+    """
+    if MOCK_MODE:
+        symbol_upper = str(symbol).upper()
+        if symbol_upper in ("2001", "&FDAX", "FDAX"):
+            return {"symbol": symbol_upper, "futures_market_session_info": "Combined"}
+        elif symbol_upper in ("2002", "&ES", "ES"):
+            return {"symbol": symbol_upper, "futures_market_session_info": "Combined"}
+        elif symbol_upper in ("1001", "1002", "TSLA", "MSFT"):
+            return {"symbol": symbol_upper, "futures_market_session_info": None}
+        raise HTTPException(
+            status_code=404, 
+            detail=f"Symbol {symbol} not found in mock mode. Supported are TSLA, MSFT, &FDAX, &ES."
+        )
+        
+    try:
+        resolved_sym = resolve_symbol(symbol)
+        val = norgatedata.futures_market_session_info(resolved_sym)
+        return {"symbol": symbol, "futures_market_session_info": val}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Norgate API Error: {str(e)}")
+
 # Add entry point to run via python server.py directly or CLI command
 
 

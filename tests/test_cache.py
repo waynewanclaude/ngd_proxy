@@ -498,8 +498,69 @@ class TestNorgateDataProxyAndCache(unittest.TestCase):
         with self.assertRaises(Exception):
             self.cache.subtype1("ON")
 
+    def test_16_futures_metadata_lookups_and_cache_bypass(self):
+        """Verifies futures metadata functions return accurate mock data and bypass cache completely."""
+        # 1. Clear cache database to start clean
+        conn = sqlite3.connect(os.path.join(TEST_CACHE_DIR, "cache_index.db"))
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM cache_metadata")
+        conn.commit()
+        conn.close()
+
+        # 2. Get futures specifications for &FDAX
+        margin_fdax = self.cache.margin("&FDAX")
+        pv_fdax = self.cache.point_value("&FDAX")
+        tv_fdax = self.cache.tick_value("&FDAX")
+        lt_fdax = self.cache.lowest_ever_tick_size("&FDAX")
+        sess_fdax = self.cache.futures_market_session_info("&FDAX")
+
+        # 3. Assert return values for &FDAX
+        self.assertEqual(margin_fdax, 18000.0)
+        self.assertEqual(pv_fdax, 25.0)
+        self.assertEqual(tv_fdax, 12.5)
+        self.assertEqual(lt_fdax, 0.5)
+        self.assertEqual(sess_fdax, "Combined")
+
+        # 4. Get futures specifications for &ES
+        margin_es = self.cache.margin("&ES")
+        pv_es = self.cache.point_value("&ES")
+        tv_es = self.cache.tick_value("&ES")
+        lt_es = self.cache.lowest_ever_tick_size("&ES")
+        sess_es = self.cache.futures_market_session_info("&ES")
+
+        # 5. Assert return values for &ES
+        self.assertEqual(margin_es, 12000.0)
+        self.assertEqual(pv_es, 50.0)
+        self.assertEqual(tv_es, 12.5)
+        self.assertEqual(lt_es, 0.25)
+        self.assertEqual(sess_es, "Combined")
+
+        # 6. Verify non-futures behavior for stocks (return None)
+        self.assertIsNone(self.cache.margin("TSLA"))
+        self.assertIsNone(self.cache.point_value("MSFT"))
+        self.assertIsNone(self.cache.tick_value("TSLA"))
+        self.assertIsNone(self.cache.lowest_ever_tick_size("MSFT"))
+        self.assertIsNone(self.cache.futures_market_session_info("TSLA"))
+
+        # 7. Check cache is bypassed (no files, no DB entries)
+        conn = sqlite3.connect(os.path.join(TEST_CACHE_DIR, "cache_index.db"))
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM cache_metadata")
+        db_count = cursor.fetchone()[0]
+        conn.close()
+        self.assertEqual(db_count, 0)
+
+        # Verify no parquet files were created
+        files = [f for f in os.listdir(TEST_CACHE_DIR) if f.endswith(".parquet")]
+        self.assertEqual(len(files), 0)
+
+        # 8. Check invalid symbol raises error in mock mode
+        with self.assertRaises(Exception):
+            self.cache.margin("ON")
+
 if __name__ == "__main__":
     unittest.main()
+
 
 
 
