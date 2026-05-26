@@ -701,10 +701,14 @@ def get_classification(
         
     try:
         resolved_sym = resolve_symbol(symbol)
-        classif = norgatedata.classification(resolved_sym, schemename, classificationresulttype, level=level)
+        if level is not None:
+            classif = norgatedata.classification_at_level(resolved_sym, schemename, classificationresulttype, level)
+        else:
+            classif = norgatedata.classification(resolved_sym, schemename, classificationresulttype)
         return {"symbol": symbol, "classification": classif}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Norgate API Error: {str(e)}")
+
 
 
 @app.get("/corresponding_industry_index", dependencies=[Depends(verify_api_key)])
