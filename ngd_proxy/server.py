@@ -424,6 +424,81 @@ def get_watchlist_details(watchlistname: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Norgate API Error: {str(e)}")
 
+@app.get("/watchlist", dependencies=[Depends(verify_api_key)])
+def get_watchlist(watchlistname: str):
+    """
+    Retrieve security details of a watchlist (assetid, symbol, name).
+    Matches native norgatedata.watchlist(watchlistname) structure.
+    """
+    return get_watchlist_details(watchlistname)
+
+@app.get("/security_name", dependencies=[Depends(verify_api_key)])
+def get_security_name(symbol: str):
+    """
+    Retrieve the full, descriptive name of the security.
+    """
+    if MOCK_MODE:
+        symbol_upper = str(symbol).upper()
+        if symbol_upper == "1001":
+            symbol_upper = "AAPL"
+        elif symbol_upper == "1002":
+            symbol_upper = "MSFT"
+            
+        mock_names = {
+            "AAPL": "Apple Inc. Common Stock",
+            "MSFT": "Microsoft Corporation Common Stock"
+        }
+        if symbol_upper not in mock_names:
+            raise HTTPException(
+                status_code=404, 
+                detail=f"Symbol {symbol} not found in mock mode. Only AAPL and MSFT are supported."
+            )
+        return {"symbol": symbol_upper, "security_name": mock_names[symbol_upper]}
+        
+    try:
+        name = norgatedata.security_name(symbol)
+        if name is None:
+            raise HTTPException(status_code=404, detail=f"Security name for symbol {symbol} not found")
+        return {"symbol": symbol, "security_name": name}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Norgate API Error: {str(e)}")
+
+@app.get("/fundamental", dependencies=[Depends(verify_api_key)])
+def get_fundamental(symbol: str, fieldname: str, datetimeformat: Optional[str] = "iso"):
+    """
+    Retrieve current fundamental single-value reported data.
+    """
+    if MOCK_MODE:
+        symbol_upper = str(symbol).upper()
+        if symbol_upper == "1001":
+            symbol_upper = "AAPL"
+        elif symbol_upper == "1002":
+            symbol_upper = "MSFT"
+            
+        if symbol_upper not in ("AAPL", "MSFT"):
+            raise HTTPException(
+                status_code=404, 
+                detail=f"Symbol {symbol} not found in mock mode. Only AAPL and MSFT are supported."
+            )
+            
+        fieldname_lower = fieldname.lower()
+        if "pe" in fieldname_lower or "price_to_earnings" in fieldname_lower:
+            val = 28.2 if symbol_upper == "AAPL" else 24.5
+        elif "eps" in fieldname_lower:
+            val = 6.5 if symbol_upper == "AAPL" else 11.2
+        else:
+            val = 150.0
+            
+        return {"value": val, "date": "2025-12-31"}
+        
+    try:
+        res = norgatedata.fundamental(symbol, fieldname, datetimeformat=datetimeformat)
+        if res is None or (isinstance(res, tuple) and res[0] is None):
+            return {"value": None, "date": None}
+        return {"value": res[0], "date": res[1]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Norgate API Error: {str(e)}")
+
 # Add entry point to run via python server.py directly or CLI command
 def main():
     import uvicorn

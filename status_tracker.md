@@ -22,7 +22,7 @@ This database tracks the implementation status of all 26 official Norgate Data A
 | 5 | `capital_event_timeseries` | Time Series | **`NO`** | Pending timeseries caching implementation. |
 | 6 | `dividend_yield_timeseries` | Time Series | **`YES`** | Fully implemented, cached locally via Parquet, passes yield test. |
 | 7 | `padding_status_timeseries` | Time Series | **`NO`** | Pending timeseries caching implementation. |
-| 8 | `security_name` | Metadata | **`PLAN`** | Individual implementation plan created at [plans/security_name_implementation_plan.md](file:///c:/Projects/claudeai/gemini/ngd_proxy/plans/security_name_implementation_plan.md). |
+| 8 | `security_name` | Metadata | **`YES`** | Fully implemented, direct pass-through, bypasses cache, passes mock & bypass tests. |
 | 9 | `exchange_name` | Metadata | **`NO`** | Pending direct pass-through lookup (no cache required). |
 | 10 | `exchange_name_full` | Metadata | **`NO`** | Pending direct pass-through lookup (no cache required). |
 | 11 | `base_type` | Metadata | **`NO`** | Pending direct pass-through lookup (no cache required). |
@@ -30,9 +30,9 @@ This database tracks the implementation status of all 26 official Norgate Data A
 | 13 | `assetid` | Metadata | **`NO`** | Pending direct pass-through lookup (no cache required). |
 | 14 | `classification` | Classifications | **`NO`** | Pending direct pass-through lookup (no cache required). |
 | 15 | `corresponding_industry_index` | Classifications | **`NO`** | Pending direct pass-through lookup (no cache required). |
-| 16 | `fundamental` | Fundamentals | **`PLAN`** | Individual implementation plan created at [plans/fundamental_implementation_plan.md](file:///c:/Projects/claudeai/gemini/ngd_proxy/plans/fundamental_implementation_plan.md). |
+| 16 | `fundamental` | Fundamentals | **`YES`** | Fully implemented, direct pass-through, bypasses cache, passes mock & bypass tests. |
 | 17 | `watchlists` | Watchlists | **`YES`** | Implemented, routes through proxy client to host server. |
-| 18 | `watchlist` | Watchlists | **`NO`** | Currently clean branch only exposes `watchlist_details`, needs direct native mapping. |
+| 18 | `watchlist` | Watchlists | **`YES`** | Fully implemented, direct native mapping, bypasses cache, passes mock & bypass tests. |
 | 19 | `watchlist_symbols` | Watchlists | **`YES`** | Implemented, routes through proxy client to host server. |
 | 20 | `margin` | Futures | **`NO`** | Pending direct pass-through lookup (no cache required). |
 | 21 | `point_value` | Futures | **`NO`** | Pending direct pass-through lookup (no cache required). |

@@ -200,3 +200,40 @@ class NorgateDataClient:
         response = requests.get(url, headers=self._get_headers(), params=params, timeout=15)
         response.raise_for_status()
         return response.json()
+
+    def watchlist(self, watchlistname: str) -> List[Dict[str, Any]]:
+        """
+        Retrieve security details of a watchlist (assetid, symbol, name).
+        """
+        url = f"{self.base_url}/watchlist"
+        params = {"watchlistname": watchlistname}
+        response = requests.get(url, headers=self._get_headers(), params=params, timeout=15)
+        response.raise_for_status()
+        return response.json()
+
+
+    def security_name(self, symbol: str) -> Optional[str]:
+        """
+        Retrieve full security name.
+        """
+        url = f"{self.base_url}/security_name"
+        params = {"symbol": symbol}
+        response = requests.get(url, headers=self._get_headers(), params=params, timeout=10)
+        response.raise_for_status()
+        return response.json().get("security_name")
+
+    def fundamental(self, symbol: str, fieldname: str, datetimeformat: str = 'iso') -> tuple:
+        """
+        Retrieve current fundamental single-value reported data.
+        """
+        url = f"{self.base_url}/fundamental"
+        params = {
+            "symbol": symbol,
+            "fieldname": fieldname,
+            "datetimeformat": datetimeformat
+        }
+        response = requests.get(url, headers=self._get_headers(), params=params, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        return (data.get("value"), data.get("date"))
+

@@ -135,7 +135,7 @@ class TestNorgateDataProxyAndCache(unittest.TestCase):
 
     def test_03_price_incremental_sync_tail(self):
         """Asserts smart range-merging when querying recent missing dates (gap at the end)."""
-        symbol = "NVDA"
+        symbol = "AAPL"
         
         # Initial seeding: Jan 1 to Jan 10
         self.cache.price_timeseries(symbol, "TOTALRETURN", "2025-01-01", "2025-01-10")
@@ -148,17 +148,18 @@ class TestNorgateDataProxyAndCache(unittest.TestCase):
         # Check that metadata in SQLite was updated to end on Jan 15
         conn = sqlite3.connect(os.path.join(TEST_CACHE_DIR, "cache_index.db"))
         cursor = conn.cursor()
-        cursor.execute("SELECT start_date, end_date, access_count FROM cache_metadata WHERE symbol='NVDA'")
+        cursor.execute("SELECT start_date, end_date, access_count FROM cache_metadata WHERE symbol='AAPL'")
         row = cursor.fetchone()
         conn.close()
         
+        self.assertIsNotNone(row)
         self.assertEqual(row[0], "2025-01-01")
         self.assertEqual(row[1], "2025-01-15")
         self.assertEqual(row[2], 2) # Incremental hit incremented access count
 
     def test_04_price_incremental_sync_head(self):
         """Asserts smart range-merging when querying older missing dates (gap at the beginning)."""
-        symbol = "AMZN"
+        symbol = "MSFT"
         
         # Initial seeding: Jan 5 to Jan 15
         self.cache.price_timeseries(symbol, "TOTALRETURN", "2025-01-05", "2025-01-15")
@@ -171,10 +172,11 @@ class TestNorgateDataProxyAndCache(unittest.TestCase):
         # Verify metadata start_date updated to Jan 01
         conn = sqlite3.connect(os.path.join(TEST_CACHE_DIR, "cache_index.db"))
         cursor = conn.cursor()
-        cursor.execute("SELECT start_date, end_date FROM cache_metadata WHERE symbol='AMZN'")
+        cursor.execute("SELECT start_date, end_date FROM cache_metadata WHERE symbol='MSFT'")
         row = cursor.fetchone()
         conn.close()
         
+        self.assertIsNotNone(row)
         self.assertEqual(row[0], "2025-01-01")
         self.assertEqual(row[1], "2025-01-15")
 
@@ -209,28 +211,115 @@ class TestNorgateDataProxyAndCache(unittest.TestCase):
         # Re-initialize cache with new tiny limit
         tiny_cache = NorgateDataCache(config_path="config_test.json")
         
-        # Cache 4 different symbols. Each file will be ~2-5KB, easily blowing the 1KB limit
+        # Cache 4 different combinations. Each file will be ~2-5KB, easily blowing the 8KB limit
         # This will trigger eviction on subsequent writes!
-        symbols = ["T1", "T2", "T3", "T4"]
-        for s in symbols:
-            tiny_cache.price_timeseries(s, "TOTALRETURN", "2025-01-01", "2025-01-20")
+        keys = [
+            ("AAPL", "TOTALRETURN"),
+            ("AAPL", "CAPITAL"),
+            ("MSFT", "TOTALRETURN"),
+            ("MSFT", "CAPITAL")
+        ]
+        for s, adj in keys:
+            tiny_cache.price_timeseries(s, adj, "2025-01-01", "2025-01-20")
             time.sleep(0.1) # ensure distinct access timestamps
             
         # Query current records in SQLite
         conn = sqlite3.connect(os.path.join(TEST_CACHE_DIR, "cache_index.db"))
         cursor = conn.cursor()
-        cursor.execute("SELECT symbol FROM cache_metadata")
-        cached_symbols = [r[0] for r in cursor.fetchall()]
+        cursor.execute("SELECT symbol, parameter FROM cache_metadata")
+        cached_keys = cursor.fetchall()
         conn.close()
         
-        # Assert that some of the oldest cached tickers (e.g. T1 or T2) have been evicted
-        # and only the most recent ones (e.g. T4) remain on disk
-        self.assertNotIn("T1", cached_symbols)
-        self.assertIn("T4", cached_symbols)
+        # Assert that some of the oldest cached keys have been evicted
+        self.assertNotIn(("AAPL", "TOTALRETURN"), cached_keys)
+        self.assertIn(("MSFT", "CAPITAL"), cached_keys)
         
-        # Confirm that the physical file for T1 was actually removed from disk
-        t1_path = os.path.join(TEST_CACHE_DIR, "price_T1_TOTALRETURN.parquet")
-        self.assertFalse(os.path.exists(t1_path))
+        # Confirm that the physical file for oldest was actually removed from disk
+        aapl_tr_path = os.path.join(TEST_CACHE_DIR, "price_AAPL_TOTALRETURN.parquet")
+        self.assertFalse(os.path.exists(aapl_tr_path))
+
+
+    def test_07_security_name_mock_data_and_cache_bypass(self):
+        """Verifies security_name returns correct mock data and bypasses the cache entirely."""
+        # 1. Clear cache database to start clean
+        conn = sqlite3.connect(os.path.join(TEST_CACHE_DIR, "cache_index.db"))
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM cache_metadata")
+        conn.commit()
+        conn.close()
+
+        # 2. Get security name
+        name = self.cache.security_name("MSFT")
+        self.assertEqual(name, "Microsoft Corporation Common Stock")
+
+        # 3. Check cache is bypassed (no files, no DB entries)
+        conn = sqlite3.connect(os.path.join(TEST_CACHE_DIR, "cache_index.db"))
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM cache_metadata")
+        db_count = cursor.fetchone()[0]
+        conn.close()
+
+        self.assertEqual(db_count, 0)
+        
+        # Verify no parquet files were created
+        files = [f for f in os.listdir(TEST_CACHE_DIR) if f.endswith(".parquet")]
+        self.assertEqual(len(files), 0)
+
+        # 4. Check that invalid symbol raises error
+        with self.assertRaises(Exception):
+            self.cache.security_name("ON")
+
+    def test_08_fundamental_mock_data_and_cache_bypass(self):
+        """Verifies fundamental returns correct mock data and bypasses the cache entirely."""
+        # 1. Clear cache database to start clean
+        conn = sqlite3.connect(os.path.join(TEST_CACHE_DIR, "cache_index.db"))
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM cache_metadata")
+        conn.commit()
+        conn.close()
+
+        # 2. Get fundamental data
+        val, dt = self.cache.fundamental("MSFT", "pe")
+        self.assertEqual(val, 24.5)
+        self.assertEqual(dt, "2025-12-31")
+
+        val2, dt2 = self.cache.fundamental("AAPL", "eps")
+        self.assertEqual(val2, 6.5)
+        self.assertEqual(dt2, "2025-12-31")
+
+        # 3. Check cache is bypassed (no files, no DB entries)
+        conn = sqlite3.connect(os.path.join(TEST_CACHE_DIR, "cache_index.db"))
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM cache_metadata")
+        db_count = cursor.fetchone()[0]
+        conn.close()
+
+        self.assertEqual(db_count, 0)
+        
+        # Verify no parquet files were created
+        files = [f for f in os.listdir(TEST_CACHE_DIR) if f.endswith(".parquet")]
+        self.assertEqual(len(files), 0)
+
+        # 4. Check that invalid symbol raises error
+        with self.assertRaises(Exception):
+            self.cache.fundamental("ON", "pe")
+
+    def test_09_watchlist_mock_data_and_cache_bypass(self):
+        """Verifies watchlist returns correct mock details and bypasses the cache entirely."""
+        # 1. Get watchlist details
+        details = self.cache.watchlist("Nasdaq 100")
+        self.assertTrue(len(details) > 0)
+        self.assertEqual(details[0]["symbol"], "AAPL")
+        self.assertEqual(details[1]["symbol"], "MSFT")
+
+        # 2. Check no DB entry was made
+        conn = sqlite3.connect(os.path.join(TEST_CACHE_DIR, "cache_index.db"))
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM cache_metadata WHERE datatype='watchlist'")
+        db_count = cursor.fetchone()[0]
+        conn.close()
+        self.assertEqual(db_count, 0)
 
 if __name__ == "__main__":
     unittest.main()
+

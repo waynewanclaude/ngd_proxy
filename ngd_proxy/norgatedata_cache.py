@@ -469,3 +469,25 @@ class NorgateDataCache:
         Transparent wrapper around proxy watchlist details.
         """
         return self.client.watchlist_details(watchlistname)
+
+    def watchlist(self, watchlistname: str) -> List[Dict[str, Any]]:
+        """
+        Exposes single-value watchlist lookup.
+        Bypasses local Parquet file-caching and database indexing entirely.
+        """
+        return self.client.watchlist(watchlistname)
+
+    def security_name(self, symbol: str) -> Optional[str]:
+        """
+        Exposes current single-value security name lookup.
+        Bypasses local Parquet file-caching and database indexing entirely.
+        """
+        return self.client.security_name(symbol)
+
+    def fundamental(self, symbol: str, fieldname: str, datetimeformat: str = 'iso') -> tuple:
+        """
+        Exposes current single-value fundamental lookup.
+        Bypasses local Parquet file-caching and database indexing entirely.
+        """
+        return self.client.fundamental(symbol, fieldname, datetimeformat)
+
