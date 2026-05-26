@@ -26,6 +26,7 @@ config_test.json
 
 # Jupyter Notebooks
 *.ipynb
+test_*.ipynb
 .ipynb_checkpoints/
 
 # Python packaging & builds
