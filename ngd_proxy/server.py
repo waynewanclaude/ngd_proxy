@@ -499,7 +499,70 @@ def get_fundamental(symbol: str, fieldname: str, datetimeformat: Optional[str] =
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Norgate API Error: {str(e)}")
 
+@app.get("/exchange_name", dependencies=[Depends(verify_api_key)])
+def get_exchange_name(symbol: str):
+    """
+    Retrieve the short exchange name of the security.
+    """
+    if MOCK_MODE:
+        symbol_upper = str(symbol).upper()
+        if symbol_upper == "1001":
+            symbol_upper = "TSLA"
+        elif symbol_upper == "1002":
+            symbol_upper = "MSFT"
+            
+        mock_exchanges = {
+            "TSLA": "NASDAQ",
+            "MSFT": "NASDAQ"
+        }
+        if symbol_upper not in mock_exchanges:
+            raise HTTPException(
+                status_code=404, 
+                detail=f"Symbol {symbol} not found in mock mode. Only TSLA and MSFT are supported."
+            )
+        return {"symbol": symbol_upper, "exchange_name": mock_exchanges[symbol_upper]}
+        
+    try:
+        name = norgatedata.exchange_name(symbol)
+        if name is None:
+            raise HTTPException(status_code=404, detail=f"Exchange name for symbol {symbol} not found")
+        return {"symbol": symbol, "exchange_name": name}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Norgate API Error: {str(e)}")
+
+@app.get("/exchange_name_full", dependencies=[Depends(verify_api_key)])
+def get_exchange_name_full(symbol: str):
+    """
+    Retrieve the full, descriptive exchange name of the security.
+    """
+    if MOCK_MODE:
+        symbol_upper = str(symbol).upper()
+        if symbol_upper == "1001":
+            symbol_upper = "TSLA"
+        elif symbol_upper == "1002":
+            symbol_upper = "MSFT"
+            
+        mock_exchanges_full = {
+            "TSLA": "Nasdaq Stock Market",
+            "MSFT": "Nasdaq Stock Market"
+        }
+        if symbol_upper not in mock_exchanges_full:
+            raise HTTPException(
+                status_code=404, 
+                detail=f"Symbol {symbol} not found in mock mode. Only TSLA and MSFT are supported."
+            )
+        return {"symbol": symbol_upper, "exchange_name_full": mock_exchanges_full[symbol_upper]}
+        
+    try:
+        name_full = norgatedata.exchange_name_full(symbol)
+        if name_full is None:
+            raise HTTPException(status_code=404, detail=f"Full exchange name for symbol {symbol} not found")
+        return {"symbol": symbol, "exchange_name_full": name_full}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Norgate API Error: {str(e)}")
+
 # Add entry point to run via python server.py directly or CLI command
+
 def main():
     import uvicorn
     host_ip = "127.0.0.1"

@@ -320,6 +320,67 @@ class TestNorgateDataProxyAndCache(unittest.TestCase):
         conn.close()
         self.assertEqual(db_count, 0)
 
+    def test_10_exchange_name_mock_data_and_cache_bypass(self):
+        """Verifies exchange_name returns correct mock data and bypasses the cache entirely."""
+        # 1. Clear cache database to start clean
+        conn = sqlite3.connect(os.path.join(TEST_CACHE_DIR, "cache_index.db"))
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM cache_metadata")
+        conn.commit()
+        conn.close()
+
+        # 2. Get exchange name
+        name = self.cache.exchange_name("TSLA")
+        self.assertEqual(name, "NASDAQ")
+
+        # 3. Check cache is bypassed (no files, no DB entries)
+        conn = sqlite3.connect(os.path.join(TEST_CACHE_DIR, "cache_index.db"))
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM cache_metadata")
+        db_count = cursor.fetchone()[0]
+        conn.close()
+
+        self.assertEqual(db_count, 0)
+        
+        # Verify no parquet files were created
+        files = [f for f in os.listdir(TEST_CACHE_DIR) if f.endswith(".parquet")]
+        self.assertEqual(len(files), 0)
+
+        # 4. Check that invalid symbol raises error
+        with self.assertRaises(Exception):
+            self.cache.exchange_name("ON")
+
+    def test_11_exchange_name_full_mock_data_and_cache_bypass(self):
+        """Verifies exchange_name_full returns correct mock data and bypasses the cache entirely."""
+        # 1. Clear cache database to start clean
+        conn = sqlite3.connect(os.path.join(TEST_CACHE_DIR, "cache_index.db"))
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM cache_metadata")
+        conn.commit()
+        conn.close()
+
+        # 2. Get full exchange name
+        name_full = self.cache.exchange_name_full("MSFT")
+        self.assertEqual(name_full, "Nasdaq Stock Market")
+
+        # 3. Check cache is bypassed (no files, no DB entries)
+        conn = sqlite3.connect(os.path.join(TEST_CACHE_DIR, "cache_index.db"))
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM cache_metadata")
+        db_count = cursor.fetchone()[0]
+        conn.close()
+
+        self.assertEqual(db_count, 0)
+        
+        # Verify no parquet files were created
+        files = [f for f in os.listdir(TEST_CACHE_DIR) if f.endswith(".parquet")]
+        self.assertEqual(len(files), 0)
+
+        # 4. Check that invalid symbol raises error
+        with self.assertRaises(Exception):
+            self.cache.exchange_name_full("ON")
+
 if __name__ == "__main__":
     unittest.main()
+
 

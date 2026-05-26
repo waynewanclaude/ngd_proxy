@@ -96,6 +96,12 @@ def security_name(symbol: str) -> Optional[str]:
 def fundamental(symbol: str, fieldname: str, datetimeformat: str = 'iso') -> tuple:
     return _get_cache().fundamental(symbol, fieldname, datetimeformat)
 
+def exchange_name(symbol: str) -> Optional[str]:
+    return _get_cache().exchange_name(symbol)
+
+def exchange_name_full(symbol: str) -> Optional[str]:
+    return _get_cache().exchange_name_full(symbol)
+
 __all__ = [
     "NorgateDataClient",
     "NorgateDataCache",
@@ -110,5 +116,8 @@ __all__ = [
     "watchlist_details",
     "watchlist",
     "security_name",
-    "fundamental"
+    "fundamental",
+    "exchange_name",
+    "exchange_name_full"
 ]
+

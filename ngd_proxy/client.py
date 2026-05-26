@@ -237,3 +237,25 @@ class NorgateDataClient:
         data = response.json()
         return (data.get("value"), data.get("date"))
 
+    def exchange_name(self, symbol: str) -> Optional[str]:
+        """
+        Retrieve short exchange name.
+        """
+        url = f"{self.base_url}/exchange_name"
+        params = {"symbol": symbol}
+        response = requests.get(url, headers=self._get_headers(), params=params, timeout=10)
+        response.raise_for_status()
+        return response.json().get("exchange_name")
+
+    def exchange_name_full(self, symbol: str) -> Optional[str]:
+        """
+        Retrieve full exchange name.
+        """
+        url = f"{self.base_url}/exchange_name_full"
+        params = {"symbol": symbol}
+        response = requests.get(url, headers=self._get_headers(), params=params, timeout=10)
+        response.raise_for_status()
+        return response.json().get("exchange_name_full")
+
+
+

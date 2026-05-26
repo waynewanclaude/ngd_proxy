@@ -491,3 +491,18 @@ class NorgateDataCache:
         """
         return self.client.fundamental(symbol, fieldname, datetimeformat)
 
+    def exchange_name(self, symbol: str) -> Optional[str]:
+        """
+        Exposes short exchange name lookup.
+        Bypasses local Parquet file-caching and database indexing entirely.
+        """
+        return self.client.exchange_name(symbol)
+
+    def exchange_name_full(self, symbol: str) -> Optional[str]:
+        """
+        Exposes full exchange name lookup.
+        Bypasses local Parquet file-caching and database indexing entirely.
+        """
+        return self.client.exchange_name_full(symbol)
+
+
