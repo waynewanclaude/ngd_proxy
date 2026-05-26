@@ -22,7 +22,7 @@ This database tracks the implementation status of all 26 official Norgate Data A
 | 5 | `capital_event_timeseries` | Time Series | **`NO`** | Pending timeseries caching implementation. |
 | 6 | `dividend_yield_timeseries` | Time Series | **`YES`** | Fully implemented, cached locally via Parquet, passes yield test. |
 | 7 | `padding_status_timeseries` | Time Series | **`NO`** | Pending timeseries caching implementation. |
-| 8 | `security_name` | Metadata | **`NO`** | Pending direct pass-through lookup (no cache required). |
+| 8 | `security_name` | Metadata | **`PLAN`** | Individual implementation plan created at [plans/security_name_implementation_plan.md](file:///c:/Projects/claudeai/gemini/ngd_proxy/plans/security_name_implementation_plan.md). |
 | 9 | `exchange_name` | Metadata | **`NO`** | Pending direct pass-through lookup (no cache required). |
 | 10 | `exchange_name_full` | Metadata | **`NO`** | Pending direct pass-through lookup (no cache required). |
 | 11 | `base_type` | Metadata | **`NO`** | Pending direct pass-through lookup (no cache required). |
