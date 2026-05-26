@@ -21,3 +21,8 @@ dependencies = [
 
 [project.scripts]
 ngd-proxy-server = "ngd_proxy.server:main"
+
+[tool.setuptools.packages.find]
+include = ["ngd_proxy*"]
+exclude = ["plans*", "tests*"]
+
