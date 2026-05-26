@@ -533,12 +533,13 @@ class NorgateDataCache:
         """
         return self.client.base_type(symbol)
 
-    def classification(self, symbol: str, schemename: str) -> Optional[str]:
+    def classification(self, symbol: str, schemename: str, classificationresulttype: str = "Name", level: Optional[int] = None) -> Optional[str]:
         """
         Exposes classification lookup.
         Bypasses local Parquet file-caching and database indexing entirely.
         """
-        return self.client.classification(symbol, schemename)
+        return self.client.classification(symbol, schemename, classificationresulttype, level)
+
 
     def corresponding_industry_index(self, symbol: str, indexfamilycode: str, level: int, indexreturntype: str) -> Optional[str]:
         """
@@ -546,6 +547,28 @@ class NorgateDataCache:
         Bypasses local Parquet file-caching and database indexing entirely.
         """
         return self.client.corresponding_industry_index(symbol, indexfamilycode, level, indexreturntype)
+
+    def subtype1(self, symbol: str) -> Optional[str]:
+        """
+        Exposes primary classification subtype lookup.
+        Bypasses local Parquet file-caching and database indexing entirely.
+        """
+        return self.client.subtype1(symbol)
+
+    def subtype2(self, symbol: str) -> Optional[str]:
+        """
+        Exposes secondary classification subtype lookup.
+        Bypasses local Parquet file-caching and database indexing entirely.
+        """
+        return self.client.subtype2(symbol)
+
+    def subtype3(self, symbol: str) -> Optional[str]:
+        """
+        Exposes tertiary classification subtype lookup.
+        Bypasses local Parquet file-caching and database indexing entirely.
+        """
+        return self.client.subtype3(symbol)
+
 
 
 

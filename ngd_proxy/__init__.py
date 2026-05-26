@@ -116,11 +116,21 @@ def assetid(symbol: str) -> Optional[int]:
 def base_type(symbol: str) -> Optional[str]:
     return _get_cache().base_type(symbol)
 
-def classification(symbol: str, schemename: str) -> Optional[str]:
-    return _get_cache().classification(symbol, schemename)
+def classification(symbol: str, schemename: str, classificationresulttype: str = "Name", level: Optional[int] = None) -> Optional[str]:
+    return _get_cache().classification(symbol, schemename, classificationresulttype, level)
+
 
 def corresponding_industry_index(symbol: str, indexfamilycode: str, level: int, indexreturntype: str) -> Optional[str]:
     return _get_cache().corresponding_industry_index(symbol, indexfamilycode, level, indexreturntype)
+
+def subtype1(symbol: str) -> Optional[str]:
+    return _get_cache().subtype1(symbol)
+
+def subtype2(symbol: str) -> Optional[str]:
+    return _get_cache().subtype2(symbol)
+
+def subtype3(symbol: str) -> Optional[str]:
+    return _get_cache().subtype3(symbol)
 
 __all__ = [
     "NorgateDataClient",
@@ -144,7 +154,11 @@ __all__ = [
     "assetid",
     "base_type",
     "classification",
-    "corresponding_industry_index"
+    "corresponding_industry_index",
+    "subtype1",
+    "subtype2",
+    "subtype3"
 ]
+
 
 

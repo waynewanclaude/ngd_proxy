@@ -428,9 +428,16 @@ class TestNorgateDataProxyAndCache(unittest.TestCase):
         btype = self.cache.base_type("MSFT")
         self.assertEqual(btype, "Stock Market")
 
-        # 3. Get classification
+        # 3. Get classification (testing defaults and result types)
         classif = self.cache.classification("TSLA", "GICS")
         self.assertEqual(classif, "Automobile")
+
+        classif_id = self.cache.classification("TSLA", "GICS", classificationresulttype="ClassificationId")
+        self.assertEqual(classif_id, "15")
+
+        classif_msft_id = self.cache.classification("MSFT", "GICS", "ClassificationId")
+        self.assertEqual(classif_msft_id, "45")
+
 
         # 4. Get corresponding industry index
         idx = self.cache.corresponding_industry_index("MSFT", "$SPX", 3, "TR")
@@ -448,8 +455,52 @@ class TestNorgateDataProxyAndCache(unittest.TestCase):
         with self.assertRaises(Exception):
             self.cache.assetid("ON")
 
+    def test_15_subtype_lookups_and_cache_bypass(self):
+        """Verifies subtype1, subtype2, and subtype3 lookups return correct mock data and bypass cache."""
+        # 1. Clear cache database to start clean
+        conn = sqlite3.connect(os.path.join(TEST_CACHE_DIR, "cache_index.db"))
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM cache_metadata")
+        conn.commit()
+        conn.close()
+
+        # 2. Get subtypes
+        sub1_tsla = self.cache.subtype1("TSLA")
+        sub2_tsla = self.cache.subtype2("TSLA")
+        sub3_tsla = self.cache.subtype3("TSLA")
+
+        sub1_msft = self.cache.subtype1("MSFT")
+        sub2_msft = self.cache.subtype2("MSFT")
+        sub3_msft = self.cache.subtype3("MSFT")
+
+        # 3. Assert return values
+        self.assertEqual(sub1_tsla, "Equity")
+        self.assertEqual(sub2_tsla, "Operating Company")
+        self.assertEqual(sub3_tsla, "Common Stock")
+
+        self.assertEqual(sub1_msft, "Equity")
+        self.assertEqual(sub2_msft, "Operating Company")
+        self.assertEqual(sub3_msft, "Common Stock")
+
+        # 4. Check cache is bypassed (no files, no DB entries)
+        conn = sqlite3.connect(os.path.join(TEST_CACHE_DIR, "cache_index.db"))
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM cache_metadata")
+        db_count = cursor.fetchone()[0]
+        conn.close()
+        self.assertEqual(db_count, 0)
+
+        # Verify no parquet files were created
+        files = [f for f in os.listdir(TEST_CACHE_DIR) if f.endswith(".parquet")]
+        self.assertEqual(len(files), 0)
+
+        # 5. Check invalid symbol raises error
+        with self.assertRaises(Exception):
+            self.cache.subtype1("ON")
+
 if __name__ == "__main__":
     unittest.main()
+
 
 
 

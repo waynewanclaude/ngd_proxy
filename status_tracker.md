@@ -26,7 +26,7 @@ This database tracks the implementation status of all 26 official Norgate Data A
 | 9 | `exchange_name` | Metadata | **`YES`** | Fully implemented, direct pass-through, bypasses cache, passes mock & bypass tests. |
 | 10 | `exchange_name_full` | Metadata | **`YES`** | Fully implemented, direct pass-through, bypasses cache, passes mock & bypass tests. |
 | 11 | `base_type` | Metadata | **`YES`** | Fully implemented, direct pass-through, bypasses cache, passes mock & bypass tests. |
-| 12 | `subtype1` (incl. `2` and `3`) | Metadata | **`NO`** | Pending direct pass-through lookup (no cache required). |
+| 12 | `subtype1` (incl. `2` and `3`) | Metadata | **`YES`** | Fully implemented, direct pass-through, bypasses cache, passes mock & bypass tests. |
 | 13 | `assetid` | Metadata | **`YES`** | Fully implemented, direct pass-through, bypasses cache, passes mock & bypass tests. |
 | 14 | `classification` | Classifications | **`YES`** | Fully implemented, direct pass-through, bypasses cache, passes mock & bypass tests. |
 | 15 | `corresponding_industry_index` | Classifications | **`YES`** | Fully implemented, direct pass-through, bypasses cache, passes mock & bypass tests. |

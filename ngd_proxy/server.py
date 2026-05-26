@@ -63,6 +63,13 @@ def verify_api_key(x_api_key: Optional[str] = Header(None)):
             detail="Invalid or missing X-API-Key header"
         )
 
+# --- Helper: Resolve Ticker symbol vs Integer AssetID ---
+def resolve_symbol(symbol: str):
+    if symbol.isdigit():
+        return int(symbol)
+    return symbol
+
+
 # --- Helper: Serialize DataFrame based on Accept Header ---
 def serialize_dataframe(df: pd.DataFrame, accept_header: Optional[str]) -> StreamingResponse:
     """
@@ -663,7 +670,12 @@ def get_base_type(symbol: str):
         raise HTTPException(status_code=500, detail=f"Norgate API Error: {str(e)}")
 
 @app.get("/classification", dependencies=[Depends(verify_api_key)])
-def get_classification(symbol: str, schemename: str):
+def get_classification(
+    symbol: str, 
+    schemename: str, 
+    classificationresulttype: Optional[str] = "Name", 
+    level: Optional[int] = None
+):
     """
     Retrieve the classification for a specific scheme.
     """
@@ -679,13 +691,21 @@ def get_classification(symbol: str, schemename: str):
                 status_code=404, 
                 detail=f"Symbol {symbol} not found in mock mode. Only TSLA and MSFT are supported."
             )
-        return {"symbol": symbol_upper, "classification": "Automobile" if symbol_upper == "TSLA" else "Software"}
+            
+        if classificationresulttype == "ClassificationId":
+            val = "15" if symbol_upper == "TSLA" else "45"
+        else:
+            val = "Automobile" if symbol_upper == "TSLA" else "Software"
+            
+        return {"symbol": symbol_upper, "classification": val}
         
     try:
-        classif = norgatedata.classification(symbol, schemename)
+        resolved_sym = resolve_symbol(symbol)
+        classif = norgatedata.classification(resolved_sym, schemename, classificationresulttype, level=level)
         return {"symbol": symbol, "classification": classif}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Norgate API Error: {str(e)}")
+
 
 @app.get("/corresponding_industry_index", dependencies=[Depends(verify_api_key)])
 def get_corresponding_industry_index(symbol: str, indexfamilycode: str, level: int, indexreturntype: str):
@@ -712,6 +732,81 @@ def get_corresponding_industry_index(symbol: str, indexfamilycode: str, level: i
     try:
         index_sym = norgatedata.corresponding_industry_index(symbol, indexfamilycode, level, indexreturntype)
         return {"symbol": symbol, "corresponding_industry_index": index_sym}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Norgate API Error: {str(e)}")
+
+@app.get("/subtype1", dependencies=[Depends(verify_api_key)])
+def get_subtype1(symbol: str):
+    """
+    Retrieve the primary classification subtype of the security.
+    """
+    if MOCK_MODE:
+        symbol_upper = str(symbol).upper()
+        if symbol_upper == "1001":
+            symbol_upper = "TSLA"
+        elif symbol_upper == "1002":
+            symbol_upper = "MSFT"
+            
+        if symbol_upper not in ("TSLA", "MSFT"):
+            raise HTTPException(
+                status_code=404, 
+                detail=f"Symbol {symbol} not found in mock mode. Only TSLA and MSFT are supported."
+            )
+        return {"symbol": symbol_upper, "subtype1": "Equity"}
+        
+    try:
+        sub = norgatedata.subtype1(symbol)
+        return {"symbol": symbol, "subtype1": sub}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Norgate API Error: {str(e)}")
+
+@app.get("/subtype2", dependencies=[Depends(verify_api_key)])
+def get_subtype2(symbol: str):
+    """
+    Retrieve the secondary classification subtype of the security.
+    """
+    if MOCK_MODE:
+        symbol_upper = str(symbol).upper()
+        if symbol_upper == "1001":
+            symbol_upper = "TSLA"
+        elif symbol_upper == "1002":
+            symbol_upper = "MSFT"
+            
+        if symbol_upper not in ("TSLA", "MSFT"):
+            raise HTTPException(
+                status_code=404, 
+                detail=f"Symbol {symbol} not found in mock mode. Only TSLA and MSFT are supported."
+            )
+        return {"symbol": symbol_upper, "subtype2": "Operating Company"}
+        
+    try:
+        sub = norgatedata.subtype2(symbol)
+        return {"symbol": symbol, "subtype2": sub}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Norgate API Error: {str(e)}")
+
+@app.get("/subtype3", dependencies=[Depends(verify_api_key)])
+def get_subtype3(symbol: str):
+    """
+    Retrieve the tertiary classification subtype of the security.
+    """
+    if MOCK_MODE:
+        symbol_upper = str(symbol).upper()
+        if symbol_upper == "1001":
+            symbol_upper = "TSLA"
+        elif symbol_upper == "1002":
+            symbol_upper = "MSFT"
+            
+        if symbol_upper not in ("TSLA", "MSFT"):
+            raise HTTPException(
+                status_code=404, 
+                detail=f"Symbol {symbol} not found in mock mode. Only TSLA and MSFT are supported."
+            )
+        return {"symbol": symbol_upper, "subtype3": "Common Stock"}
+        
+    try:
+        sub = norgatedata.subtype3(symbol)
+        return {"symbol": symbol, "subtype3": sub}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Norgate API Error: {str(e)}")
 

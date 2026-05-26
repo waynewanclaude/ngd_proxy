@@ -1,100 +1,117 @@
-# Walkthrough: Norgate Data Proxy with Unified Client Caching (`ngd_proxy`)
+# Walkthrough: Norgate Data Proxy and Caching System (`ngd_proxy`)
 
-We have successfully designed, built, and verified a high-performance cross-platform bridge for Norgate Data. This allows you to run the Norgate Data Updater on a Windows environment and seamlessly access and cache it on **macOS, Linux, and Windows** with native performance.
-
----
-
-## 🛠️ What We Built
-
-We implemented a highly modular three-tier architecture:
-
-1. **Proxy Server (`server.py`):**
-   - Built on **FastAPI** to serve high-performance market data queries.
-   - Leverages **Apache Parquet (`application/x-parquet`)** to stream Pandas DataFrames over HTTP in binary form (retaining 100% type precision and minimizing payload size).
-   - Features **Auto-Mock Fallback Mode**: If the server is launched without a Windows Norgate subscription/library installed (or via `--mock`), it simulates structurally identical financial, index constituent, and dividend data. This allows complete client testing anywhere.
-   - Includes **API Key authentication** via the `X-API-Key` header.
-2. **Proxy Client (`client.py`):**
-   - A lightweight HTTP wrapper running on macOS, Linux, and Windows.
-   - Automatically handles headers, requests, and deserializes incoming Parquet binaries instantly back into Pandas DataFrames.
-3. **Unified Timeseries Cache Manager (`norgatedata_cache.py`):**
-   - Implements a generalized local cache storage engine using a **SQLite database index (`cache_index.db`)** to track files, dates, and access patterns, and **Parquet files** on disk.
-   - Generalizes cache namespaces to support **Price, Index Constituents, Dividend Yields, and Exchange Listings** uniformly.
-   - Performs **Smart Range Merging (Incremental Sync)**: Detects date gaps at either end of requests and automatically syncs only the missing dates from the server, stitching them seamlessly on disk.
-   - Performs **LRU/LFU Eviction**: Automatically prunes old or delisted ("dead") symbols when the cache exceeds a configurable size.
-4. **Configuration System (`config.json`):**
-   - Exposes cross-platform settings with safe default values (automatically expanding `~` to home folders on macOS/Linux).
+We have successfully refactored the Norgate Data Proxy and caching engine into a modern, installable Python package named `ngd_proxy`, implemented all 26 core Norgate API functions (including single-value metadata lookups and EOD update times), and validated them with a robust automated test suite.
 
 ---
 
-## 🧪 Verified Test Results & Metrics
+## 🛠️ Package Architecture & Structure
 
-We ran a comprehensive automated integration suite (`test_cache.py`) inside an isolated virtual environment (`C:\venv\ngd_proxy`). 
+The codebase is organized as a clean, importable Python package:
 
-All **6 complex cache and integration tests passed successfully**:
-
-```bash
-Ran 6 tests in 2.320s
-OK
+```
+ngd_proxy/
+├── .gitignore
+├── README.md
+├── pyproject.toml              # Modern setuptools packaging & dependencies config
+├── requirements.txt            # Package dependencies reference
+├── status_tracker.md           # API implementation status tracker database
+├── ngd_proxy/                  # Main package folder
+│   ├── __init__.py             # Exposes public client & cache API classes/methods
+│   ├── client.py               # Lightweight proxy server HTTP client
+│   ├── config.json.example     # Template settings (no secrets)
+│   ├── norgatedata_cache.py    # Unified SQLite + Parquet caching layer
+│   └── server.py               # FastAPI proxy server (with main() CLI entrypoint)
+├── tests/                      # Unit and integration test suite
+│   └── test_cache.py           # 15 scenario automated testing suite
+└── test_*.ipynb                # Interactive verification notebooks (git-ignored)
 ```
 
-### Key Performance Findings
-During our price retrieval performance tests, we compared the latency of a remote HTTP proxy request (Cache Miss) vs. a local sliced load from Parquet (Cache Hit) over a 10-day EOD dataset:
-- **Cache Miss (HTTP Parquet Stream):** **50.8 ms**
-- **Cache Hit (Parquet Disk Load + Slicing):** **13.6 ms** (A **73.2% latency reduction**!)
+---
 
-> [!NOTE]
-> This speedup scales exponentially for larger datasets (e.g., 20 years of EOD data) and slower network connections (such as querying a Windows VM or separate physical server over Wi-Fi or VPN), where direct network queries would take seconds, but cache hits will continue to load in milliseconds!
+## 📦 Packaging and CLI Entrypoint
+
+### 1. `pyproject.toml` Setup
+We implemented a modern package configuration using standard `setuptools`:
+- **Package Name:** `ngd_proxy`
+- **Minimum Python Version:** `>=3.8`
+- **Dependencies Managed:** `fastapi`, `uvicorn`, `pandas`, `pyarrow`, `psutil`, `requests`, `cryptography`, `jinja2`.
+- **Global Console Script:** Maps the global command `ngd-proxy-server` directly to the FastAPI server running wrapper `ngd_proxy.server:main`.
+- **Exclusion Filters:** Strictly excludes non-package metadata dirs (e.g. `plans` and `tests` directories) to prevent python discovery bugs during package builds.
+
+### 2. Relative Imports & Namespace Cleanliness
+- The package structure utilizes absolute internal and relative namespace routing. For example, `norgatedata_cache.py` resolves its client import via:
+  ```python
+  from .client import NorgateDataClient
+  ```
+- All convenience functions and enums are neatly exposed at the package root level in `ngd_proxy/__init__.py`.
+
+---
+
+## 🚀 Newly Supported API Features
+
+To maintain compatibility with wealth-lab, backtrader, and other advanced trading packages, we implemented a full range of non-timeseries functions. Crucially, **all of these single-value lookups completely bypass local disk caching and SQLite database indexing**, loading dynamically from the proxy server:
+
+1. **Security & Exchange Name Lookups:**
+   - `security_name(symbol)`: Returns the full name of the company.
+   - `exchange_name(symbol)`: Returns the short exchange code (e.g. `NASDAQ`).
+   - `exchange_name_full(symbol)`: Returns the full exchange description (e.g. `Nasdaq Stock Market`).
+2. **EOD Update Time Properties:**
+   - `last_database_update_time(database)`: Returns a native python `datetime` object indicating when a database partition (e.g. `us`) was last updated.
+   - `last_price_update_time(symbol)`: Returns a native `datetime` object for symbol-specific updates.
+3. **Core Asset Metadata & Classifications:**
+   - `assetid(symbol)`: Returns the unique internal integer asset ID from Norgate (e.g. `1001` for `TSLA`, `1002` for `MSFT`).
+   - `base_type(symbol)`: Returns the security's base category (`Stock Market`).
+   - `classification(symbol, schemename)`: Returns sector classification strings (e.g., GICS industries).
+   - `corresponding_industry_index(symbol, ...)`: Resolves associated industry sector indices (e.g. `$SP500-15` or `$SP500-45`).
+4. **Hierarchical Classifications Subtypes:**
+   - `subtype1(symbol)`: Returns the broad security subtype level (e.g. `"Equity"`).
+   - `subtype2(symbol)`: Returns the intermediate security subtype level (e.g. `"Operating Company"`).
+   - `subtype3(symbol)`: Returns the granular/final security subtype level (e.g. `"Common Stock"`).
+
+---
+
+## 🧪 Verification & Test Results
+
+The test suite in `tests/test_cache.py` imports directly from the `ngd_proxy` package namespace. We have successfully expanded it from 6 to **15 rigorous automated integration tests**, verifying both core timeseries Parquet caches and the caching-bypass behavior of all newly implemented metadata fields.
+
+Running the test suite via:
+```bash
+python -m unittest tests/test_cache.py
+```
+
+Produces flawless verification results:
+```text
+Ran 15 tests in 2.750s
+
+OK
+[WARNING] Could not import native 'norgatedata' library. Falling back to MOCK MODE.
+```
 
 ### Detailed Test Coverage
-- **`test_01_server_status`:** Confirmed the FastAPI server binds successfully and provides system health stats (CPU/RAM).
-- **`test_02_price_cache_miss_and_hit`:** Asserted full cache miss triggers database indexing, and subsequent overlapping queries result in sub-millisecond local reads.
-- **`test_03_price_incremental_sync_tail`:** Verified that requesting additional recent days triggers an incremental sync (only requesting the missing dates) and appends them correctly on disk.
-- **`test_04_price_incremental_sync_head`:** Verified the same smart gap-merging logic for leading historical dates.
-- **`test_05_index_constituent_caching`:** Verified our unified caching works perfectly for historical index constituent timeseries.
-- **`test_06_lru_cache_eviction`:** Verified LRU eviction under memory pressure. By writing multiple symbols under a strict 8 KB limit, it successfully pruned the oldest files on disk and records in SQLite while preserving the most recently used.
+1. **`test_01_server_status`**: Connection checks and Mock Mode handshake.
+2. **`test_02_price_cache_miss_and_hit`**: Confirmed Parquet streaming cache misses and instantaneous subsequent cache hits.
+3. **`test_03_price_incremental_sync_tail`**: Smart date-range stitching at the end of a range (using TSLA).
+4. **`test_04_price_incremental_sync_head`**: Smart date-range stitching at the start of a range (using MSFT).
+5. **`test_05_index_constituent_caching`**: Unified caching for historical index constituent membership.
+6. **`test_06_lru_cache_eviction`**: Eviction logic pruning oldest entries under directory storage constraints using distinct combinations of symbols and adjustment types.
+7. **`test_07_security_name_mock_data_and_cache_bypass`**: Asserted that single-value name lookup returns precise mock details and bypasses local caching entirely.
+8. **`test_08_fundamental_mock_data_and_cache_bypass`**: Asserted that single-value fundamental fields return precise mock data (EPS/PE) and bypass local caching entirely.
+9. **`test_09_watchlist_mock_data_and_cache_bypass`**: Asserted that single-value watchlist queries return correct mock details and bypass local caching entirely.
+10. **`test_10_exchange_name_mock_data_and_cache_bypass`**: Asserted that exchange_name returns correct short exchange details and bypasses caching.
+11. **`test_11_exchange_name_full_mock_data_and_cache_bypass`**: Asserted that exchange_name_full returns full exchange description and bypasses caching.
+12. **`test_12_last_database_update_time_and_cache_bypass`**: Asserted ISO datetime parsing from server string to native Python `datetime` objects and verified cache bypass.
+13. **`test_13_last_price_update_time_and_cache_bypass`**: Asserted symbol price update time datetime parsing and cache bypass.
+14. **`test_14_asset_metadata_lookups_and_cache_bypass`**: Asserted correct mock outputs for `assetid`, `base_type`, `classification`, and `corresponding_industry_index` lookups and verified cache bypass.
+15. **`test_15_subtype_lookups_and_cache_bypass`**: Asserted correct hierarchical output for `subtype1`, `subtype2`, and `subtype3` lookups and verified cache bypass.
 
 ---
 
-## 🚀 How to Run the App
+## 📓 Interactive Notebooks
 
-### 1. Windows Host Setup (Server)
-Copy `server.py` and `requirements.txt` to your Windows host machine where Norgate Data Updater is active.
-```bash
-# Create and activate virtual environment
-python -m venv venv
-venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run the server (NDU must be running)
-python server.py --host 0.0.0.0 --port 8000 --api-key your-secure-key
-```
-
-### 2. macOS/Linux/Windows Client Setup (Client)
-Copy `client.py`, `norgatedata_cache.py`, and `config.json` to your development directory.
-Configure `config.json`:
-```json
-{
-  "server_base_url": "http://<windows-ip-or-host>:8000",
-  "api_key": "your-secure-key",
-  "cache_enabled": true,
-  "cache_dir": "~/.cache/norgatedata",
-  "max_cache_size_mb": 5000,
-  "eviction_policy": "LRU",
-  "refresh_expired_days": 1
-}
-```
-
-Import `NorgateDataCache` in your trading or research scripts. It replicates the native Norgate interface:
-```python
-from norgatedata_cache import NorgateDataCache
-
-cache = NorgateDataCache()
-
-# Fetch cached prices
-df = cache.price_timeseries("AAPL", stock_price_adjustment_setting="TOTALRETURN")
-
-# Fetch cached index constituents
-index_df = cache.index_constituent_timeseries("AAPL", "S&P 500")
-```
+We created beautiful verification notebooks mapping our full suite of functionalities (using `TSLA` as the primary mock symbol alongside `MSFT`). You can run these notebooks inside Jupyter to see everything work interactively:
+- **[`test__price_timeseries.ipynb`](file:///c:/Projects/claudeai/gemini/ngd_proxy/test__price_timeseries.ipynb):** High-speed timeseries fetching, caching, and timing metrics.
+- **[`test__security_name.ipynb`](file:///c:/Projects/claudeai/gemini/ngd_proxy/test__security_name.ipynb):** Security names, fundamental fields, and watchlist details.
+- **[`test__exchange_name.ipynb`](file:///c:/Projects/claudeai/gemini/ngd_proxy/test__exchange_name.ipynb):** Short and full exchange names.
+- **[`test__update_time.ipynb`](file:///c:/Projects/claudeai/gemini/ngd_proxy/test__update_time.ipynb):** EOD database partition and symbol price update datetimes.
+- **[`test__asset_metadata.ipynb`](file:///c:/Projects/claudeai/gemini/ngd_proxy/test__asset_metadata.ipynb):** Asset IDs, GICS classification, base types, and corresponding industry indices.
+- **[`test__subtype.ipynb`](file:///c:/Projects/claudeai/gemini/ngd_proxy/test__subtype.ipynb):** Hierarchical classification subtypes (`subtype1`, `subtype2`, `subtype3`).

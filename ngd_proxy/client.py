@@ -301,15 +301,22 @@ class NorgateDataClient:
         response.raise_for_status()
         return response.json().get("base_type")
 
-    def classification(self, symbol: str, schemename: str) -> Optional[str]:
+    def classification(self, symbol: str, schemename: str, classificationresulttype: str = "Name", level: Optional[int] = None) -> Optional[str]:
         """
         Retrieve classification category for a schemename.
         """
         url = f"{self.base_url}/classification"
-        params = {"symbol": symbol, "schemename": schemename}
+        params = {
+            "symbol": symbol,
+            "schemename": schemename,
+            "classificationresulttype": classificationresulttype
+        }
+        if level is not None:
+            params["level"] = level
         response = requests.get(url, headers=self._get_headers(), params=params, timeout=10)
         response.raise_for_status()
         return response.json().get("classification")
+
 
     def corresponding_industry_index(self, symbol: str, indexfamilycode: str, level: int, indexreturntype: str) -> Optional[str]:
         """
@@ -325,6 +332,37 @@ class NorgateDataClient:
         response = requests.get(url, headers=self._get_headers(), params=params, timeout=10)
         response.raise_for_status()
         return response.json().get("corresponding_industry_index")
+
+    def subtype1(self, symbol: str) -> Optional[str]:
+        """
+        Retrieve primary classification subtype of the security.
+        """
+        url = f"{self.base_url}/subtype1"
+        params = {"symbol": symbol}
+        response = requests.get(url, headers=self._get_headers(), params=params, timeout=10)
+        response.raise_for_status()
+        return response.json().get("subtype1")
+
+    def subtype2(self, symbol: str) -> Optional[str]:
+        """
+        Retrieve secondary classification subtype of the security.
+        """
+        url = f"{self.base_url}/subtype2"
+        params = {"symbol": symbol}
+        response = requests.get(url, headers=self._get_headers(), params=params, timeout=10)
+        response.raise_for_status()
+        return response.json().get("subtype2")
+
+    def subtype3(self, symbol: str) -> Optional[str]:
+        """
+        Retrieve tertiary classification subtype of the security.
+        """
+        url = f"{self.base_url}/subtype3"
+        params = {"symbol": symbol}
+        response = requests.get(url, headers=self._get_headers(), params=params, timeout=10)
+        response.raise_for_status()
+        return response.json().get("subtype3")
+
 
 
 
