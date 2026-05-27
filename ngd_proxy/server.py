@@ -499,16 +499,29 @@ def get_unadjusted_close_timeseries(
             resolved_sym,
             timeseriesformat="pandas-dataframe",
             start_date=start_date,
-            end_date=end_date,
-            key_by_assetid=key_by_assetid
+            end_date=end_date
         )
         
         if df is None or df.empty:
             raise HTTPException(status_code=404, detail=f"No unadjusted close data found for symbol {symbol}")
             
-        df.index.name = "AssetID" if key_by_assetid else "Date"
         if len(df.columns) == 1:
             df.columns = ["Close"]
+            
+        if key_by_assetid:
+            if isinstance(resolved_sym, int):
+                aid = resolved_sym
+            else:
+                aid = norgatedata.assetid(resolved_sym)
+                
+            if aid is None:
+                raise HTTPException(status_code=404, detail=f"Could not resolve Asset ID for symbol {symbol}")
+                
+            df = df.copy()
+            df.index = [aid] * len(df)
+            df.index.name = "AssetID"
+        else:
+            df.index.name = "Date"
             
         return serialize_dataframe(df, accept)
         
