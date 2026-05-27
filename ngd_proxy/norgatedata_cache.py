@@ -552,6 +552,35 @@ class NorgateDataCache:
         )
         return self._convert_format(df_cached, timeseriesformat)
 
+    def padding_status_timeseries(
+        self,
+        symbol: str,
+        timeseriesformat: Any = "numpy-recarray",
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None
+    ):
+        """Exposes SQLite-tracked and Parquet-cached historical price padding status."""
+        if not self.cache_enabled:
+            df = self.client.padding_status_timeseries(symbol, start_date, end_date)
+            return self._convert_format(df, timeseriesformat)
+            
+        # Lambda fetch delegate
+        fetch_func = lambda start_date, end_date: self.client.padding_status_timeseries(
+            symbol=symbol,
+            start_date=start_date,
+            end_date=end_date
+        )
+        
+        df_cached = self._get_timeseries(
+            "padding_status", 
+            symbol, 
+            "PADDING_STATUS", 
+            start_date, 
+            end_date, 
+            fetch_func
+        )
+        return self._convert_format(df_cached, timeseriesformat)
+
     def watchlists(self) -> List[str]:
         """
         Transparent wrapper around proxy watchlists.

@@ -250,6 +250,29 @@ def generate_mock_capital_event(
     df.index.name = "Date"
     return df
 
+def generate_mock_padding_status(
+    symbol: str, 
+    start_date: str = "2020-01-01", 
+    end_date: Optional[str] = None
+) -> pd.DataFrame:
+    """Generates simulated EOD padding status timeseries (mostly 0s, with rare simulated holiday padded bars)."""
+    if not end_date:
+        end_date = pd.Timestamp.now().strftime("%Y-%m-%d")
+    dates = pd.bdate_range(start=start_date, end=end_date)
+    n = len(dates)
+    if n == 0:
+        return pd.DataFrame(columns=["PaddingStatus"])
+        
+    status_vals = np.zeros(n, dtype=int)
+    # Simulate a padded bar (e.g. holiday padding) once every 120 business days
+    np.random.seed(abs(hash(symbol)) % 2**32)
+    for i in range(45, n, 120):
+        status_vals[i] = 1
+        
+    df = pd.DataFrame({"PaddingStatus": status_vals}, index=dates)
+    df.index.name = "Date"
+    return df
+
 # --- API Endpoints ---
 
 @app.get("/status", dependencies=[Depends(verify_api_key)])
@@ -594,6 +617,60 @@ def get_capital_event_timeseries(
         df.index.name = "Date"
         if len(df.columns) == 1:
             df.columns = ["Capital Event"]
+            
+        return serialize_dataframe(df, accept)
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Norgate API Error: {str(e)}")
+
+@app.get("/padding_status_timeseries", dependencies=[Depends(verify_api_key)])
+def get_padding_status_timeseries(
+    symbol: str,
+    start_date: Optional[str] = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    end_date: Optional[str] = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    accept: Optional[str] = Header(None)
+):
+    """
+    Fetch padding status timeseries for a stock.
+    Supports JSON or binary Parquet streaming via Accept header.
+    """
+    if MOCK_MODE:
+        symbol_upper = str(symbol).upper()
+        if symbol_upper == "1001":
+            symbol_upper = "TSLA"
+        elif symbol_upper == "1002":
+            symbol_upper = "MSFT"
+
+        if symbol_upper not in ("TSLA", "MSFT"):
+            raise HTTPException(
+                status_code=404, 
+                detail=f"Symbol {symbol} not found in mock mode. Supported are TSLA, MSFT."
+            )
+            
+        df = generate_mock_padding_status(
+            symbol=symbol_upper,
+            start_date=start_date or "2020-01-01",
+            end_date=end_date
+        )
+        return serialize_dataframe(df, accept)
+
+    # Real Mode using norgatedata
+    try:
+        resolved_sym = resolve_symbol(symbol)
+        
+        df = norgatedata.padding_status_timeseries(
+            resolved_sym,
+            timeseriesformat="pandas-dataframe",
+            start_date=start_date,
+            end_date=end_date
+        )
+        
+        if df is None or df.empty:
+            raise HTTPException(status_code=404, detail=f"No padding status data found for symbol {symbol}")
+            
+        df.index.name = "Date"
+        if len(df.columns) == 1:
+            df.columns = ["PaddingStatus"]
             
         return serialize_dataframe(df, accept)
         

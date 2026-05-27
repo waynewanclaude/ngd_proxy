@@ -139,6 +139,25 @@ def capital_event_timeseries(
         end_date=end_date
     )
 
+def padding_status_timeseries(
+    symbol: str,
+    timeseriesformat: Union[str, TimeSeriesFormat] = TimeSeriesFormat.NUMPY_RECARRAY,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None
+):
+    """
+    Returns padding status timeseries indicating which dates have padded prices.
+    Matches the official norgatedata.padding_status_timeseries signature.
+    """
+    if isinstance(timeseriesformat, TimeSeriesFormat):
+        timeseriesformat = timeseriesformat.value
+    return _get_cache().padding_status_timeseries(
+        symbol=symbol,
+        timeseriesformat=timeseriesformat,
+        start_date=start_date,
+        end_date=end_date
+    )
+
 def watchlists() -> List[str]:
     return _get_cache().watchlists()
 
@@ -218,6 +237,7 @@ __all__ = [
     "unadjusted_close_timeseries",
     "major_exchange_listed_timeseries",
     "capital_event_timeseries",
+    "padding_status_timeseries",
     "watchlists",
     "watchlist_symbols",
     "watchlist_details",
