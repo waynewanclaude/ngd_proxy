@@ -558,6 +558,113 @@ class TestNorgateDataProxyAndCache(unittest.TestCase):
         with self.assertRaises(Exception):
             self.cache.margin("ON")
 
+    def test_17_unadjusted_close_timeseries_caching_and_formats(self):
+        """Verifies that unadjusted close timeseries caching, delta-stitching, and format conversion layers work perfectly."""
+        # 1. Clear cache database to start clean
+        conn = sqlite3.connect(os.path.join(TEST_CACHE_DIR, "cache_index.db"))
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM cache_metadata")
+        conn.commit()
+        conn.close()
+
+        # Remove any lingering parquet files
+        for f in os.listdir(TEST_CACHE_DIR):
+            if f.endswith(".parquet"):
+                os.remove(os.path.join(TEST_CACHE_DIR, f))
+
+        # 2. Assert cache miss (Server Fetch & Cache Write)
+        df_tsla = self.cache.unadjusted_close_timeseries(
+            symbol="TSLA",
+            timeseriesformat="pandas-dataframe",
+            start_date="2025-01-01",
+            end_date="2025-01-10"
+        )
+        self.assertIsInstance(df_tsla, pd.DataFrame)
+        self.assertFalse(df_tsla.empty)
+        self.assertEqual(list(df_tsla.columns), ["Close"])
+        self.assertEqual(df_tsla.index.name, "Date")
+
+        # Verify DB metadata entry was made
+        conn = sqlite3.connect(os.path.join(TEST_CACHE_DIR, "cache_index.db"))
+        cursor = conn.cursor()
+        cursor.execute("SELECT start_date, end_date, file_path, access_count FROM cache_metadata WHERE datatype='unadjusted_close' AND symbol='TSLA' AND parameter='UNADJUSTED'")
+        record = cursor.fetchone()
+        conn.close()
+        self.assertIsNotNone(record)
+        self.assertEqual(record[0], "2025-01-01")
+        self.assertEqual(record[1], "2025-01-10")
+
+        # Verify Parquet file was created
+        parquet_file = record[2]
+        self.assertTrue(os.path.exists(parquet_file))
+        self.assertTrue("unadjusted_close_TSLA_UNADJUSTED" in parquet_file)
+
+        # 3. Assert cache hit (Instant slice without server)
+        df_tsla_hit = self.cache.unadjusted_close_timeseries(
+            symbol="TSLA",
+            timeseriesformat="pandas-dataframe",
+            start_date="2025-01-02",
+            end_date="2025-01-08"
+        )
+        self.assertEqual(len(df_tsla_hit), 5) # 5 business days between Jan 2 and Jan 8
+
+        # 4. Verify different timeseriesformat settings
+        # numpy-recarray
+        rec = self.cache.unadjusted_close_timeseries(
+            symbol="TSLA",
+            timeseriesformat="numpy-recarray",
+            start_date="2025-01-01",
+            end_date="2025-01-10"
+        )
+        import numpy as np
+        self.assertIsInstance(rec, np.recarray)
+        self.assertTrue(len(rec) > 0)
+        self.assertTrue("Close" in rec.dtype.names)
+        self.assertTrue("Date" in rec.dtype.names)
+
+        # numpy-ndarray
+        arr = self.cache.unadjusted_close_timeseries(
+            symbol="TSLA",
+            timeseriesformat="numpy-ndarray",
+            start_date="2025-01-01",
+            end_date="2025-01-10"
+        )
+        self.assertIsInstance(arr, np.ndarray)
+        self.assertEqual(arr.ndim, 2) # Date and Close
+
+        # 5. Verify continuous futures contract caching
+        df_fdax = self.cache.unadjusted_close_timeseries(
+            symbol="&FDAX",
+            timeseriesformat="pandas-dataframe",
+            start_date="2025-01-01",
+            end_date="2025-01-10"
+        )
+        self.assertIsInstance(df_fdax, pd.DataFrame)
+        self.assertFalse(df_fdax.empty)
+
+        # 6. Verify key_by_assetid caching behavior
+        df_asset = self.cache.unadjusted_close_timeseries(
+            symbol="MSFT",
+            timeseriesformat="pandas-dataframe",
+            start_date="2025-01-01",
+            end_date="2025-01-10",
+            key_by_assetid=True
+        )
+        self.assertEqual(df_asset.index.name, "AssetID")
+        self.assertEqual(df_asset.index[0], 1002)
+
+        # Verify DB metadata entry for asset ID param
+        conn = sqlite3.connect(os.path.join(TEST_CACHE_DIR, "cache_index.db"))
+        cursor = conn.cursor()
+        cursor.execute("SELECT parameter FROM cache_metadata WHERE datatype='unadjusted_close' AND symbol='MSFT'")
+        record_asset = cursor.fetchone()
+        conn.close()
+        self.assertEqual(record_asset[0], "UNADJUSTED_ASSETID")
+
+        # 7. Assert that invalid symbol raises 404 client error in mock mode
+        with self.assertRaises(Exception):
+            self.cache.unadjusted_close_timeseries("AAPL")
+
 if __name__ == "__main__":
     unittest.main()
 

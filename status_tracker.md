@@ -16,7 +16,7 @@ This database tracks the implementation status of all 26 official Norgate Data A
 | # | Function / Property Name | Category | Current Status | Notes |
 |---|---------------------------|----------|----------------|-------|
 | 1 | `price_timeseries` | Price / Volume | **`YES`** | Fully implemented, cached locally via Parquet, passes performance test. |
-| 2 | `unadjusted_close_timeseries` | Price / Volume | **`NO`** | Pending timeseries caching implementation. |
+| 2 | `unadjusted_close_timeseries` | Price / Volume | **`YES`** | Fully implemented, cached locally via Parquet, supporting recarray, dataframe and ndarray formats. |
 | 3 | `index_constituent_timeseries` | Time Series | **`YES`** | Fully implemented, cached locally via Parquet, passes index sync test. |
 | 4 | `major_exchange_listed_timeseries` | Time Series | **`NO`** | Pending timeseries caching implementation. |
 | 5 | `capital_event_timeseries` | Time Series | **`NO`** | Pending timeseries caching implementation. |

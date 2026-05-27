@@ -452,6 +452,49 @@ class NorgateDataCache:
         
         return self._get_timeseries("dividend_yield", symbol, "DIVIDEND", start_date, end_date, fetch_func)
 
+    def _convert_format(self, df: pd.DataFrame, format_setting: Any):
+        """Converts the internal Pandas DataFrame to the requested native user return format."""
+        if hasattr(format_setting, "value"):
+            fmt = str(format_setting.value).lower()
+        else:
+            fmt = str(format_setting).lower()
+            
+        if fmt == "pandas-dataframe":
+            return df
+        elif fmt == "numpy-recarray":
+            return df.to_records(index=True)
+        elif fmt == "numpy-ndarray":
+            return df.to_numpy()
+        else:
+            raise ValueError(f"Unsupported timeseries format: {format_setting}")
+
+    def unadjusted_close_timeseries(
+        self,
+        symbol: str,
+        timeseriesformat: Any = "numpy-recarray",
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        key_by_assetid: bool = False
+    ):
+        """Exposes SQLite-tracked and Parquet-cached historical unadjusted close prices."""
+        if not self.cache_enabled:
+            df = self.client.unadjusted_close_timeseries(symbol, start_date, end_date, key_by_assetid)
+            return self._convert_format(df, timeseriesformat)
+            
+        param = "UNADJUSTED"
+        if key_by_assetid:
+            param += "_ASSETID"
+            
+        fetch_func = lambda start_date, end_date: self.client.unadjusted_close_timeseries(
+            symbol=symbol,
+            start_date=start_date,
+            end_date=end_date,
+            key_by_assetid=key_by_assetid
+        )
+        
+        df_cached = self._get_timeseries("unadjusted_close", symbol, param, start_date, end_date, fetch_func)
+        return self._convert_format(df_cached, timeseriesformat)
+
     def watchlists(self) -> List[str]:
         """
         Transparent wrapper around proxy watchlists.

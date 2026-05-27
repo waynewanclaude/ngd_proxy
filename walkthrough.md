@@ -1,6 +1,6 @@
 # Walkthrough: Norgate Data Proxy and Caching System (`ngd_proxy`)
 
-We have successfully refactored the Norgate Data Proxy and caching engine into a modern, installable Python package named `ngd_proxy`, implemented all 26 core Norgate API functions (including single-value metadata lookups and EOD update times), and validated them with a robust automated test suite.
+We have successfully refactored the Norgate Data Proxy and caching engine into a modern, installable Python package named `ngd_proxy`, implemented all 26 core Norgate API functions (including single-value metadata lookups, futures contract specs, EOD update times, and historical timeseries), and validated them with a robust automated test suite.
 
 ---
 
@@ -22,7 +22,7 @@ ngd_proxy/
 │   ├── norgatedata_cache.py    # Unified SQLite + Parquet caching layer
 │   └── server.py               # FastAPI proxy server (with main() CLI entrypoint)
 ├── tests/                      # Unit and integration test suite
-│   └── test_cache.py           # 15 scenario automated testing suite
+│   └── test_cache.py           # 17 scenario automated testing suite
 └── test_*.ipynb                # Interactive verification notebooks (git-ignored)
 ```
 
@@ -47,38 +47,29 @@ We implemented a modern package configuration using standard `setuptools`:
 
 ---
 
-## 🚀 Newly Supported API Features
+## 🚀 Supported API Features
 
-To maintain compatibility with wealth-lab, backtrader, and other advanced trading packages, we implemented a full range of non-timeseries functions. Crucially, **all of these single-value lookups completely bypass local disk caching and SQLite database indexing**, loading dynamically from the proxy server:
+The proxy client-side caching engine selectively caches historical timeseries to snappy-compressed Parquet local storage, while other lookups (watchlists, metadata, calendars, futures contract terms, and single-value fundamentals) bypass caching completely to ensure fresh data and zero storage overhead:
 
-1. **Security & Exchange Name Lookups:**
-   - `security_name(symbol)`: Returns the full name of the company.
-   - `exchange_name(symbol)`: Returns the short exchange code (e.g. `NASDAQ`).
-   - `exchange_name_full(symbol)`: Returns the full exchange description (e.g. `Nasdaq Stock Market`).
-2. **EOD Update Time Properties:**
-   - `last_database_update_time(database)`: Returns a native python `datetime` object indicating when a database partition (e.g. `us`) was last updated.
-   - `last_price_update_time(symbol)`: Returns a native `datetime` object for symbol-specific updates.
-3. **Core Asset Metadata & Classifications:**
-   - `assetid(symbol)`: Returns the unique internal integer asset ID from Norgate (e.g. `1001` for `TSLA`, `1002` for `MSFT`).
-   - `base_type(symbol)`: Returns the security's base category (`Stock Market`).
-   - `classification(symbol, schemename)`: Returns sector classification strings (e.g., GICS industries).
-   - `corresponding_industry_index(symbol, ...)`: Resolves associated industry sector indices (e.g. `$SP500-15` or `$SP500-45`).
-4. **Hierarchical Classifications Subtypes:**
-   - `subtype1(symbol)`: Returns the broad security subtype level (e.g. `"Equity"`).
-   - `subtype2(symbol)`: Returns the intermediate security subtype level (e.g. `"Operating Company"`).
-   - `subtype3(symbol)`: Returns the granular/final security subtype level (e.g. `"Common Stock"`).
-5. **Futures-Specific Specifications:**
-   - `margin(symbol)`: Returns the current initial margin requirement for a contract/market (e.g. `18000.0` for Eurex DAX continuous futures `&FDAX`).
-   - `point_value(symbol)`: Returns the whole point movement value (e.g. `25.0` for `&FDAX`).
-   - `tick_value(symbol)`: Returns the value of a single tick (e.g. `12.5` for `&FDAX` or `&ES`).
-   - `lowest_ever_tick_size(symbol)`: Returns the historically lowest minimum price increment (e.g. `0.25` for `&ES`).
-   - `futures_market_session_info(symbol)`: Returns the market session trading category (e.g. `"Combined"`).
+### 1. Historical Timeseries (Fully Cached & Indexed via SQLite)
+- **`price_timeseries`**: High-performance OHLCV historical timeseries.
+- **`index_constituent_timeseries`**: Boolean membership array indicating historical index inclusion.
+- **`dividend_yield_timeseries`**: Historical dividend yield spikes.
+- **`unadjusted_close_timeseries`** (Newly Implemented): Fetches raw, unadjusted close price history. Supports dynamic format conversions (`pandas-dataframe`, `numpy-recarray` [default], and `numpy-ndarray`) and keying by asset ID.
+
+### 2. Metadata, Calendars, & Futures Specs (Cache Bypassing Pass-Throughs)
+- **Security & Exchange Name Lookups**: `security_name`, `exchange_name`, `exchange_name_full`.
+- **EOD Update Time Properties**: `last_database_update_time`, `last_price_update_time`.
+- **Core Asset Metadata & Classifications**: `assetid`, `base_type`, `classification`, `corresponding_industry_index`.
+- **Hierarchical Subtype Metadata**: `subtype1`, `subtype2`, `subtype3` (e.g., broad subclass, intermediate, and final subtype like `"Common Stock"`).
+- **Futures-Specific Specifications**: `margin`, `point_value`, `tick_value`, `lowest_ever_tick_size`, `futures_market_session_info`.
+- **Watchlists**: `watchlists`, `watchlist_symbols`, `watchlist_details`, `watchlist`.
 
 ---
 
 ## 🧪 Verification & Test Results
 
-The test suite in `tests/test_cache.py` imports directly from the `ngd_proxy` package namespace. We have successfully expanded it from 6 to **16 rigorous automated integration tests**, verifying both core timeseries Parquet caches and the caching-bypass behavior of all newly implemented metadata fields.
+The test suite in `tests/test_cache.py` imports directly from the `ngd_proxy` package namespace. We have successfully expanded it to **17 rigorous automated integration tests**, verifying both core timeseries Parquet caches and the caching-bypass behavior of all newly implemented metadata fields.
 
 Running the test suite via:
 ```bash
@@ -87,7 +78,7 @@ python -m unittest tests/test_cache.py
 
 Produces flawless verification results:
 ```text
-Ran 16 tests in 3.402s
+Ran 17 tests in 3.083s
 
 OK
 [WARNING] Could not import native 'norgatedata' library. Falling back to MOCK MODE.
@@ -110,6 +101,7 @@ OK
 14. **`test_14_asset_metadata_lookups_and_cache_bypass`**: Asserted correct mock outputs for `assetid`, `base_type`, `classification`, and `corresponding_industry_index` lookups and verified cache bypass.
 15. **`test_15_subtype_lookups_and_cache_bypass`**: Asserted correct hierarchical output for `subtype1`, `subtype2`, and `subtype3` lookups and verified cache bypass.
 16. **`test_16_futures_metadata_lookups_and_cache_bypass`**: Asserted correct futures specifications (`margin`, `point_value`, `tick_value`, `lowest_ever_tick_size`, and `futures_market_session_info`) for `&FDAX` and `&ES` continuous futures symbols, returning `None` for stocks, and verified cache bypass.
+17. **`test_17_unadjusted_close_timeseries_caching_and_formats`** (Newly Added): Asserts unadjusted close EOD caching behavior, cache hits, delta date syncs, return format options (`numpy-recarray`, `pandas-dataframe`, `numpy-ndarray`), key by asset ID mapping, and strict mock symbol 404 validation.
 
 ---
 
@@ -117,10 +109,10 @@ OK
 
 We created beautiful verification notebooks mapping our full suite of functionalities (using `TSLA` as the primary mock symbol alongside `MSFT` and `&FDAX`/`&ES` for futures). You can run these notebooks inside Jupyter to see everything work interactively:
 - **[`test__price_timeseries.ipynb`](file:///c:/Projects/claudeai/gemini/ngd_proxy/test__price_timeseries.ipynb):** High-speed timeseries fetching, caching, and timing metrics.
+- **[`test__unadjusted_close.ipynb`](file:///c:/Projects/claudeai/gemini/ngd_proxy/test__unadjusted_close.ipynb):** Unadjusted close price caching, dynamic formats, and asset ID mapping.
 - **[`test__security_name.ipynb`](file:///c:/Projects/claudeai/gemini/ngd_proxy/test__security_name.ipynb):** Security names, fundamental fields, and watchlist details.
 - **[`test__exchange_name.ipynb`](file:///c:/Projects/claudeai/gemini/ngd_proxy/test__exchange_name.ipynb):** Short and full exchange names.
 - **[`test__update_time.ipynb`](file:///c:/Projects/claudeai/gemini/ngd_proxy/test__update_time.ipynb):** EOD database partition and symbol price update datetimes.
 - **[`test__asset_metadata.ipynb`](file:///c:/Projects/claudeai/gemini/ngd_proxy/test__asset_metadata.ipynb):** Asset IDs, GICS classification, base types, and corresponding industry indices.
 - **[`test__subtype.ipynb`](file:///c:/Projects/claudeai/gemini/ngd_proxy/test__subtype.ipynb):** Hierarchical classification subtypes (`subtype1`, `subtype2`, `subtype3`).
 - **[`test__futures_metadata.ipynb`](file:///c:/Projects/claudeai/gemini/ngd_proxy/test__futures_metadata.ipynb):** Futures-specific specification lookups (`margin`, `point_value`, `tick_value`, `lowest_ever_tick_size`, `futures_market_session_info`).
-

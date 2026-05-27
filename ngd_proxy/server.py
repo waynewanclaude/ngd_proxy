@@ -198,6 +198,17 @@ def generate_mock_dividend_timeseries(
     df.index.name = "Date"
     return df
 
+def generate_mock_unadjusted_close(
+    symbol: str,
+    start_date: str = "2020-01-01",
+    end_date: Optional[str] = None
+) -> pd.DataFrame:
+    """
+    Generates simulated EOD unadjusted close timeseries.
+    """
+    df = generate_mock_price_timeseries(symbol, start_date, end_date)
+    return df[["Close"]]
+
 # --- API Endpoints ---
 
 @app.get("/status", dependencies=[Depends(verify_api_key)])
@@ -363,6 +374,80 @@ def get_dividend_yield_timeseries(
             df.columns = ["dividend_yield"]
             
         return serialize_dataframe(df, accept)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Norgate API Error: {str(e)}")
+
+@app.get("/unadjusted_close_timeseries", dependencies=[Depends(verify_api_key)])
+def get_unadjusted_close_timeseries(
+    symbol: str,
+    start_date: Optional[str] = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    end_date: Optional[str] = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    key_by_assetid: bool = False,
+    accept: Optional[str] = Header(None)
+):
+    """
+    Fetch unadjusted close timeseries for a security.
+    Supports JSON or binary Parquet streaming via Accept header.
+    """
+    if MOCK_MODE:
+        symbol_upper = str(symbol).upper()
+        # Resolve integer asset IDs
+        if symbol_upper == "1001":
+            symbol_upper = "TSLA"
+        elif symbol_upper == "1002":
+            symbol_upper = "MSFT"
+        elif symbol_upper == "2001":
+            symbol_upper = "&FDAX"
+        elif symbol_upper == "2002":
+            symbol_upper = "&ES"
+        elif symbol_upper == "FDAX":
+            symbol_upper = "&FDAX"
+        elif symbol_upper == "ES":
+            symbol_upper = "&ES"
+
+        if symbol_upper not in ("TSLA", "MSFT", "&FDAX", "&ES"):
+            raise HTTPException(
+                status_code=404, 
+                detail=f"Symbol {symbol} not found in mock mode. Supported are TSLA, MSFT, &FDAX, &ES."
+            )
+            
+        df = generate_mock_unadjusted_close(
+            symbol=symbol_upper,
+            start_date=start_date or "2020-01-01",
+            end_date=end_date
+        )
+        
+        # If key_by_assetid is True, replace the Date index with AssetID (1001, 1002, 2001, 2002)
+        if key_by_assetid:
+            asset_id_map = {"TSLA": 1001, "MSFT": 1002, "&FDAX": 2001, "&ES": 2002}
+            aid = asset_id_map[symbol_upper]
+            df = df.copy()
+            df.index = [aid] * len(df)
+            df.index.name = "AssetID"
+            
+        return serialize_dataframe(df, accept)
+
+    # Real Mode using norgatedata
+    try:
+        resolved_sym = resolve_symbol(symbol)
+        
+        df = norgatedata.unadjusted_close_timeseries(
+            resolved_sym,
+            timeseriesformat="pandas-dataframe",
+            start_date=start_date,
+            end_date=end_date,
+            key_by_assetid=key_by_assetid
+        )
+        
+        if df is None or df.empty:
+            raise HTTPException(status_code=404, detail=f"No unadjusted close data found for symbol {symbol}")
+            
+        df.index.name = "AssetID" if key_by_assetid else "Date"
+        if len(df.columns) == 1:
+            df.columns = ["Close"]
+            
+        return serialize_dataframe(df, accept)
+        
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Norgate API Error: {str(e)}")
 

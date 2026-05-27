@@ -174,6 +174,27 @@ class NorgateDataClient:
             
         return self._request_dataframe("/dividend_yield_timeseries", params)
 
+    def unadjusted_close_timeseries(
+        self,
+        symbol: str,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        key_by_assetid: bool = False
+    ) -> pd.DataFrame:
+        """
+        Fetches historical EOD unadjusted close timeseries from the proxy host.
+        """
+        params = {
+            "symbol": symbol,
+            "key_by_assetid": key_by_assetid
+        }
+        if start_date:
+            params["start_date"] = start_date
+        if end_date:
+            params["end_date"] = end_date
+            
+        return self._request_dataframe("/unadjusted_close_timeseries", params)
+
     def watchlists(self) -> List[str]:
         """
         Retrieve available watchlists.

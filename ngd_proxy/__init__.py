@@ -80,6 +80,27 @@ def dividend_yield_timeseries(
         end_date=end_date
     )
 
+def unadjusted_close_timeseries(
+    symbol: str,
+    timeseriesformat: Union[str, TimeSeriesFormat] = TimeSeriesFormat.NUMPY_RECARRAY,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    key_by_assetid: bool = False
+):
+    """
+    Returns unadjusted close EOD timeseries.
+    Matches the official norgatedata.unadjusted_close_timeseries signature.
+    """
+    if isinstance(timeseriesformat, TimeSeriesFormat):
+        timeseriesformat = timeseriesformat.value
+    return _get_cache().unadjusted_close_timeseries(
+        symbol=symbol,
+        timeseriesformat=timeseriesformat,
+        start_date=start_date,
+        end_date=end_date,
+        key_by_assetid=key_by_assetid
+    )
+
 def watchlists() -> List[str]:
     return _get_cache().watchlists()
 
@@ -156,6 +177,7 @@ __all__ = [
     "price_timeseries",
     "index_constituent_timeseries",
     "dividend_yield_timeseries",
+    "unadjusted_close_timeseries",
     "watchlists",
     "watchlist_symbols",
     "watchlist_details",
