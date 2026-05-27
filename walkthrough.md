@@ -58,6 +58,7 @@ The proxy client-side caching engine selectively caches historical timeseries to
 - **`unadjusted_close_timeseries`** (Newly Implemented): Fetches raw, unadjusted close price history. Supports dynamic format conversions (`pandas-dataframe`, `numpy-recarray` [default], and `numpy-ndarray`) and keying by asset ID.
 - **`major_exchange_listed_timeseries`** (Newly Implemented): Fetches indicator series showing whether a US security was listed on a major exchange vs OTC historically. Supports dynamic formats (`numpy-recarray` [default], `pandas-dataframe`, `numpy-ndarray`).
 - **`capital_event_timeseries`** (Newly Implemented): Fetches indicator series showing whether a corporate action (split, stock dividend, reorganization) occurred on the ex-date. Supports dynamic formats (`numpy-recarray` [default], `pandas-dataframe`, `numpy-ndarray`).
+- **`padding_status_timeseries`** (Newly Implemented): Fetches indicator series showing whether price records were date-padded historically. Supports dynamic formats (`numpy-recarray` [default], `pandas-dataframe`, `numpy-ndarray`).
 
 ### 2. Metadata, Calendars, & Futures Specs (Cache Bypassing Pass-Throughs)
 - **Security & Exchange Name Lookups**: `security_name`, `exchange_name`, `exchange_name_full`.
@@ -106,6 +107,7 @@ OK
 17. **`test_17_unadjusted_close_timeseries_caching_and_formats`** (Newly Added): Asserts unadjusted close EOD caching behavior, cache hits, delta date syncs, return format options (`numpy-recarray`, `pandas-dataframe`, `numpy-ndarray`), key by asset ID mapping, and strict mock symbol 404 validation.
 18. **`test_18_major_exchange_listed_timeseries_caching_and_formats`** (Newly Added): Asserts major exchange listed status EOD caching behavior, cache hits, different return format options (`numpy-recarray`, `pandas-dataframe`, `numpy-ndarray`), and strict mock symbol 404 validation.
 19. **`test_19_capital_event_timeseries_caching_and_formats`** (Newly Added): Asserts capital event status EOD caching behavior, cache hits, different return format options (`numpy-recarray`, `pandas-dataframe`, `numpy-ndarray`), and strict mock symbol 404 validation.
+20. **`test_20_padding_status_timeseries_caching_and_formats`** (Newly Added): Asserts price padding status EOD caching behavior, cache hits, different return format options (`numpy-recarray`, `pandas-dataframe`, `numpy-ndarray`), and strict mock symbol 404 validation.
 
 ---
 
@@ -116,6 +118,7 @@ We created beautiful verification notebooks mapping our full suite of functional
 - **[`test__unadjusted_close.ipynb`](file:///c:/Projects/claudeai/gemini/ngd_proxy/test__unadjusted_close.ipynb):** Unadjusted close price caching, dynamic formats, and asset ID mapping.
 - **[`test__major_exchange_listed.ipynb`](file:///c:/Projects/claudeai/gemini/ngd_proxy/test__major_exchange_listed.ipynb):** Major exchange listed status price caching and dynamic formats.
 - **[`test__capital_event.ipynb`](file:///c:/Projects/claudeai/gemini/ngd_proxy/test__capital_event.ipynb):** Corporate action capital events caching and dynamic formats.
+- **[`test__padding_status.ipynb`](file:///c:/Projects/claudeai/gemini/ngd_proxy/test__padding_status.ipynb):** EOD date padding indicators caching and dynamic formats.
 - **[`test__security_name.ipynb`](file:///c:/Projects/claudeai/gemini/ngd_proxy/test__security_name.ipynb):** Security names, fundamental fields, and watchlist details.
 - **[`test__exchange_name.ipynb`](file:///c:/Projects/claudeai/gemini/ngd_proxy/test__exchange_name.ipynb):** Short and full exchange names.
 - **[`test__update_time.ipynb`](file:///c:/Projects/claudeai/gemini/ngd_proxy/test__update_time.ipynb):** EOD database partition and symbol price update datetimes.
