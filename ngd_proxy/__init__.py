@@ -101,6 +101,25 @@ def unadjusted_close_timeseries(
         key_by_assetid=key_by_assetid
     )
 
+def major_exchange_listed_timeseries(
+    symbol: str,
+    timeseriesformat: Union[str, TimeSeriesFormat] = TimeSeriesFormat.NUMPY_RECARRAY,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None
+):
+    """
+    Returns major exchange listing status timeseries.
+    Matches the official norgatedata.major_exchange_listed_timeseries signature.
+    """
+    if isinstance(timeseriesformat, TimeSeriesFormat):
+        timeseriesformat = timeseriesformat.value
+    return _get_cache().major_exchange_listed_timeseries(
+        symbol=symbol,
+        timeseriesformat=timeseriesformat,
+        start_date=start_date,
+        end_date=end_date
+    )
+
 def watchlists() -> List[str]:
     return _get_cache().watchlists()
 
@@ -178,6 +197,7 @@ __all__ = [
     "index_constituent_timeseries",
     "dividend_yield_timeseries",
     "unadjusted_close_timeseries",
+    "major_exchange_listed_timeseries",
     "watchlists",
     "watchlist_symbols",
     "watchlist_details",

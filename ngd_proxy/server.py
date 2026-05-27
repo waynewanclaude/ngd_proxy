@@ -209,6 +209,24 @@ def generate_mock_unadjusted_close(
     df = generate_mock_price_timeseries(symbol, start_date, end_date)
     return df[["Close"]]
 
+def generate_mock_major_exchange_listed(
+    symbol: str, 
+    start_date: str = "2020-01-01", 
+    end_date: Optional[str] = None
+) -> pd.DataFrame:
+    """Generates simulated EOD listing status timeseries (all 1s for major stocks TSLA/MSFT)."""
+    if not end_date:
+        end_date = pd.Timestamp.now().strftime("%Y-%m-%d")
+    dates = pd.bdate_range(start=start_date, end=end_date)
+    n = len(dates)
+    if n == 0:
+        return pd.DataFrame(columns=["MajorExchangeListed"])
+        
+    status_vals = np.ones(n, dtype=int)
+    df = pd.DataFrame({"MajorExchangeListed": status_vals}, index=dates)
+    df.index.name = "Date"
+    return df
+
 # --- API Endpoints ---
 
 @app.get("/status", dependencies=[Depends(verify_api_key)])
@@ -445,6 +463,60 @@ def get_unadjusted_close_timeseries(
         df.index.name = "AssetID" if key_by_assetid else "Date"
         if len(df.columns) == 1:
             df.columns = ["Close"]
+            
+        return serialize_dataframe(df, accept)
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Norgate API Error: {str(e)}")
+
+@app.get("/major_exchange_listed_timeseries", dependencies=[Depends(verify_api_key)])
+def get_major_exchange_listed_timeseries(
+    symbol: str,
+    start_date: Optional[str] = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    end_date: Optional[str] = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    accept: Optional[str] = Header(None)
+):
+    """
+    Fetch major exchange listed timeseries for a stock.
+    Supports JSON or binary Parquet streaming via Accept header.
+    """
+    if MOCK_MODE:
+        symbol_upper = str(symbol).upper()
+        if symbol_upper == "1001":
+            symbol_upper = "TSLA"
+        elif symbol_upper == "1002":
+            symbol_upper = "MSFT"
+
+        if symbol_upper not in ("TSLA", "MSFT"):
+            raise HTTPException(
+                status_code=404, 
+                detail=f"Symbol {symbol} not found in mock mode. Supported are TSLA, MSFT."
+            )
+            
+        df = generate_mock_major_exchange_listed(
+            symbol=symbol_upper,
+            start_date=start_date or "2020-01-01",
+            end_date=end_date
+        )
+        return serialize_dataframe(df, accept)
+
+    # Real Mode using norgatedata
+    try:
+        resolved_sym = resolve_symbol(symbol)
+        
+        df = norgatedata.major_exchange_listed_timeseries(
+            resolved_sym,
+            timeseriesformat="pandas-dataframe",
+            start_date=start_date,
+            end_date=end_date
+        )
+        
+        if df is None or df.empty:
+            raise HTTPException(status_code=404, detail=f"No listing data found for symbol {symbol}")
+            
+        df.index.name = "Date"
+        if len(df.columns) == 1:
+            df.columns = ["MajorExchangeListed"]
             
         return serialize_dataframe(df, accept)
         

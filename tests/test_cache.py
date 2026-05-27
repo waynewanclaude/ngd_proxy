@@ -665,6 +665,82 @@ class TestNorgateDataProxyAndCache(unittest.TestCase):
         with self.assertRaises(Exception):
             self.cache.unadjusted_close_timeseries("AAPL")
 
+    def test_18_major_exchange_listed_timeseries_caching_and_formats(self):
+        """Verifies that major exchange listed status timeseries caching and formats work perfectly."""
+        # 1. Clear cache database to start clean
+        conn = sqlite3.connect(os.path.join(TEST_CACHE_DIR, "cache_index.db"))
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM cache_metadata")
+        conn.commit()
+        conn.close()
+
+        # Remove any lingering parquet files
+        for f in os.listdir(TEST_CACHE_DIR):
+            if f.endswith(".parquet"):
+                os.remove(os.path.join(TEST_CACHE_DIR, f))
+
+        # 2. Assert cache miss (Server Fetch & Cache Write)
+        df_tsla = self.cache.major_exchange_listed_timeseries(
+            symbol="TSLA",
+            timeseriesformat="pandas-dataframe",
+            start_date="2025-01-01",
+            end_date="2025-01-10"
+        )
+        self.assertIsInstance(df_tsla, pd.DataFrame)
+        self.assertFalse(df_tsla.empty)
+        self.assertEqual(list(df_tsla.columns), ["MajorExchangeListed"])
+        self.assertEqual(df_tsla.index.name, "Date")
+
+        # Verify DB metadata entry was made
+        conn = sqlite3.connect(os.path.join(TEST_CACHE_DIR, "cache_index.db"))
+        cursor = conn.cursor()
+        cursor.execute("SELECT start_date, end_date, file_path FROM cache_metadata WHERE datatype='major_exchange_listed' AND symbol='TSLA' AND parameter='MAJOR_EXCHANGE_LISTED'")
+        record = cursor.fetchone()
+        conn.close()
+        self.assertIsNotNone(record)
+        self.assertEqual(record[0], "2025-01-01")
+        self.assertEqual(record[1], "2025-01-10")
+
+        # Verify Parquet file was created
+        parquet_file = record[2]
+        self.assertTrue(os.path.exists(parquet_file))
+
+        # 3. Assert cache hit (Instant slice without server)
+        df_tsla_hit = self.cache.major_exchange_listed_timeseries(
+            symbol="TSLA",
+            timeseriesformat="pandas-dataframe",
+            start_date="2025-01-02",
+            end_date="2025-01-08"
+        )
+        self.assertEqual(len(df_tsla_hit), 5) 
+
+        # 4. Verify different timeseriesformat settings
+        # numpy-recarray
+        rec = self.cache.major_exchange_listed_timeseries(
+            symbol="TSLA",
+            timeseriesformat="numpy-recarray",
+            start_date="2025-01-01",
+            end_date="2025-01-10"
+        )
+        import numpy as np
+        self.assertIsInstance(rec, np.recarray)
+        self.assertTrue(len(rec) > 0)
+        self.assertTrue("MajorExchangeListed" in rec.dtype.names)
+
+        # numpy-ndarray
+        arr = self.cache.major_exchange_listed_timeseries(
+            symbol="TSLA",
+            timeseriesformat="numpy-ndarray",
+            start_date="2025-01-01",
+            end_date="2025-01-10"
+        )
+        self.assertIsInstance(arr, np.ndarray)
+        self.assertEqual(arr.ndim, 2)
+
+        # 5. Assert that invalid symbol raises 404 client error in mock mode
+        with self.assertRaises(Exception):
+            self.cache.major_exchange_listed_timeseries("AAPL")
+
 if __name__ == "__main__":
     unittest.main()
 

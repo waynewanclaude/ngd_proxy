@@ -495,6 +495,34 @@ class NorgateDataCache:
         df_cached = self._get_timeseries("unadjusted_close", symbol, param, start_date, end_date, fetch_func)
         return self._convert_format(df_cached, timeseriesformat)
 
+    def major_exchange_listed_timeseries(
+        self,
+        symbol: str,
+        timeseriesformat: Any = "numpy-recarray",
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None
+    ):
+        """Exposes SQLite-tracked and Parquet-cached major exchange listing status history."""
+        if not self.cache_enabled:
+            df = self.client.major_exchange_listed_timeseries(symbol, start_date, end_date)
+            return self._convert_format(df, timeseriesformat)
+            
+        fetch_func = lambda start_date, end_date: self.client.major_exchange_listed_timeseries(
+            symbol=symbol,
+            start_date=start_date,
+            end_date=end_date
+        )
+        
+        df_cached = self._get_timeseries(
+            "major_exchange_listed", 
+            symbol, 
+            "MAJOR_EXCHANGE_LISTED", 
+            start_date, 
+            end_date, 
+            fetch_func
+        )
+        return self._convert_format(df_cached, timeseriesformat)
+
     def watchlists(self) -> List[str]:
         """
         Transparent wrapper around proxy watchlists.
