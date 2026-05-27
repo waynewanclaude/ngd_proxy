@@ -212,6 +212,23 @@ class NorgateDataClient:
             
         return self._request_dataframe("/major_exchange_listed_timeseries", params)
 
+    def capital_event_timeseries(
+        self,
+        symbol: str,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None
+    ) -> pd.DataFrame:
+        """
+        Fetches historical EOD capital event timeseries from the proxy host.
+        """
+        params = {"symbol": symbol}
+        if start_date:
+            params["start_date"] = start_date
+        if end_date:
+            params["end_date"] = end_date
+            
+        return self._request_dataframe("/capital_event_timeseries", params)
+
     def watchlists(self) -> List[str]:
         """
         Retrieve available watchlists.

@@ -227,6 +227,29 @@ def generate_mock_major_exchange_listed(
     df.index.name = "Date"
     return df
 
+def generate_mock_capital_event(
+    symbol: str, 
+    start_date: str = "2020-01-01", 
+    end_date: Optional[str] = None
+) -> pd.DataFrame:
+    """Generates simulated EOD capital event timeseries (mostly 0s, with approx yearly ex-dates)."""
+    if not end_date:
+        end_date = pd.Timestamp.now().strftime("%Y-%m-%d")
+    dates = pd.bdate_range(start=start_date, end=end_date)
+    n = len(dates)
+    if n == 0:
+        return pd.DataFrame(columns=["Capital Event"])
+        
+    events = np.zeros(n, dtype=int)
+    # Simulate a stock split/event once every 250 business days (approx yearly)
+    np.random.seed(abs(hash(symbol)) % 2**32)
+    for i in range(120, n, 250):
+        events[i] = 1
+        
+    df = pd.DataFrame({"Capital Event": events}, index=dates)
+    df.index.name = "Date"
+    return df
+
 # --- API Endpoints ---
 
 @app.get("/status", dependencies=[Depends(verify_api_key)])
@@ -517,6 +540,60 @@ def get_major_exchange_listed_timeseries(
         df.index.name = "Date"
         if len(df.columns) == 1:
             df.columns = ["MajorExchangeListed"]
+            
+        return serialize_dataframe(df, accept)
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Norgate API Error: {str(e)}")
+
+@app.get("/capital_event_timeseries", dependencies=[Depends(verify_api_key)])
+def get_capital_event_timeseries(
+    symbol: str,
+    start_date: Optional[str] = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    end_date: Optional[str] = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    accept: Optional[str] = Header(None)
+):
+    """
+    Fetch capital event timeseries for a stock.
+    Supports JSON or binary Parquet streaming via Accept header.
+    """
+    if MOCK_MODE:
+        symbol_upper = str(symbol).upper()
+        if symbol_upper == "1001":
+            symbol_upper = "TSLA"
+        elif symbol_upper == "1002":
+            symbol_upper = "MSFT"
+
+        if symbol_upper not in ("TSLA", "MSFT"):
+            raise HTTPException(
+                status_code=404, 
+                detail=f"Symbol {symbol} not found in mock mode. Supported are TSLA, MSFT."
+            )
+            
+        df = generate_mock_capital_event(
+            symbol=symbol_upper,
+            start_date=start_date or "2020-01-01",
+            end_date=end_date
+        )
+        return serialize_dataframe(df, accept)
+
+    # Real Mode using norgatedata
+    try:
+        resolved_sym = resolve_symbol(symbol)
+        
+        df = norgatedata.capital_event_timeseries(
+            resolved_sym,
+            timeseriesformat="pandas-dataframe",
+            start_date=start_date,
+            end_date=end_date
+        )
+        
+        if df is None or df.empty:
+            raise HTTPException(status_code=404, detail=f"No capital event data found for symbol {symbol}")
+            
+        df.index.name = "Date"
+        if len(df.columns) == 1:
+            df.columns = ["Capital Event"]
             
         return serialize_dataframe(df, accept)
         

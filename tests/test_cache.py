@@ -741,6 +741,82 @@ class TestNorgateDataProxyAndCache(unittest.TestCase):
         with self.assertRaises(Exception):
             self.cache.major_exchange_listed_timeseries("AAPL")
 
+    def test_19_capital_event_timeseries_caching_and_formats(self):
+        """Verifies that capital event timeseries caching and formats work perfectly."""
+        # 1. Clear cache database to start clean
+        conn = sqlite3.connect(os.path.join(TEST_CACHE_DIR, "cache_index.db"))
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM cache_metadata")
+        conn.commit()
+        conn.close()
+
+        # Remove any lingering parquet files
+        for f in os.listdir(TEST_CACHE_DIR):
+            if f.endswith(".parquet"):
+                os.remove(os.path.join(TEST_CACHE_DIR, f))
+
+        # 2. Assert cache miss (Server Fetch & Cache Write)
+        df_tsla = self.cache.capital_event_timeseries(
+            symbol="TSLA",
+            timeseriesformat="pandas-dataframe",
+            start_date="2025-01-01",
+            end_date="2025-01-10"
+        )
+        self.assertIsInstance(df_tsla, pd.DataFrame)
+        self.assertFalse(df_tsla.empty)
+        self.assertEqual(list(df_tsla.columns), ["Capital Event"])
+        self.assertEqual(df_tsla.index.name, "Date")
+
+        # Verify DB metadata entry was made
+        conn = sqlite3.connect(os.path.join(TEST_CACHE_DIR, "cache_index.db"))
+        cursor = conn.cursor()
+        cursor.execute("SELECT start_date, end_date, file_path FROM cache_metadata WHERE datatype='capital_event' AND symbol='TSLA' AND parameter='CAPITAL_EVENT'")
+        record = cursor.fetchone()
+        conn.close()
+        self.assertIsNotNone(record)
+        self.assertEqual(record[0], "2025-01-01")
+        self.assertEqual(record[1], "2025-01-10")
+
+        # Verify Parquet file was created
+        parquet_file = record[2]
+        self.assertTrue(os.path.exists(parquet_file))
+
+        # 3. Assert cache hit (Instant slice without server)
+        df_tsla_hit = self.cache.capital_event_timeseries(
+            symbol="TSLA",
+            timeseriesformat="pandas-dataframe",
+            start_date="2025-01-02",
+            end_date="2025-01-08"
+        )
+        self.assertEqual(len(df_tsla_hit), 5) 
+
+        # 4. Verify different timeseriesformat settings
+        # numpy-recarray
+        rec = self.cache.capital_event_timeseries(
+            symbol="TSLA",
+            timeseriesformat="numpy-recarray",
+            start_date="2025-01-01",
+            end_date="2025-01-10"
+        )
+        import numpy as np
+        self.assertIsInstance(rec, np.recarray)
+        self.assertTrue(len(rec) > 0)
+        self.assertTrue("Capital Event" in rec.dtype.names)
+
+        # numpy-ndarray
+        arr = self.cache.capital_event_timeseries(
+            symbol="TSLA",
+            timeseriesformat="numpy-ndarray",
+            start_date="2025-01-01",
+            end_date="2025-01-10"
+        )
+        self.assertIsInstance(arr, np.ndarray)
+        self.assertEqual(arr.ndim, 2)
+
+        # 5. Assert that invalid symbol raises 404 client error in mock mode
+        with self.assertRaises(Exception):
+            self.cache.capital_event_timeseries("AAPL")
+
 if __name__ == "__main__":
     unittest.main()
 

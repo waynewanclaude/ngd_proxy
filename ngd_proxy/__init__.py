@@ -120,6 +120,25 @@ def major_exchange_listed_timeseries(
         end_date=end_date
     )
 
+def capital_event_timeseries(
+    symbol: str,
+    timeseriesformat: Union[str, TimeSeriesFormat] = TimeSeriesFormat.NUMPY_RECARRAY,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None
+):
+    """
+    Returns capital event timeseries indicating split/corporate ex-dates.
+    Matches the official norgatedata.capital_event_timeseries signature.
+    """
+    if isinstance(timeseriesformat, TimeSeriesFormat):
+        timeseriesformat = timeseriesformat.value
+    return _get_cache().capital_event_timeseries(
+        symbol=symbol,
+        timeseriesformat=timeseriesformat,
+        start_date=start_date,
+        end_date=end_date
+    )
+
 def watchlists() -> List[str]:
     return _get_cache().watchlists()
 
@@ -198,6 +217,7 @@ __all__ = [
     "dividend_yield_timeseries",
     "unadjusted_close_timeseries",
     "major_exchange_listed_timeseries",
+    "capital_event_timeseries",
     "watchlists",
     "watchlist_symbols",
     "watchlist_details",
