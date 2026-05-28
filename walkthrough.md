@@ -72,7 +72,7 @@ The proxy client-side caching engine selectively caches historical timeseries to
 
 ## 🧪 Verification & Test Results
 
-The test suite in `tests/test_cache.py` imports directly from the `ngd_proxy` package namespace. We have successfully expanded it to **18 rigorous automated integration tests**, verifying both core timeseries Parquet caches and the caching-bypass behavior of all newly implemented metadata fields.
+The test suite in `tests/test_cache.py` imports directly from the `ngd_proxy` package namespace. We have successfully expanded it to **21 rigorous automated integration tests**, verifying both core timeseries Parquet caches, server discovery features, and the caching-bypass behavior of all newly implemented metadata fields.
 
 Running the test suite via:
 ```bash
@@ -81,7 +81,7 @@ python -m unittest tests/test_cache.py
 
 Produces flawless verification results:
 ```text
-Ran 18 tests in 3.093s
+Ran 21 tests in 4.893s
 
 OK
 [WARNING] Could not import native 'norgatedata' library. Falling back to MOCK MODE.
@@ -108,6 +108,7 @@ OK
 18. **`test_18_major_exchange_listed_timeseries_caching_and_formats`** (Newly Added): Asserts major exchange listed status EOD caching behavior, cache hits, different return format options (`numpy-recarray`, `pandas-dataframe`, `numpy-ndarray`), and strict mock symbol 404 validation.
 19. **`test_19_capital_event_timeseries_caching_and_formats`** (Newly Added): Asserts capital event status EOD caching behavior, cache hits, different return format options (`numpy-recarray`, `pandas-dataframe`, `numpy-ndarray`), and strict mock symbol 404 validation.
 20. **`test_20_padding_status_timeseries_caching_and_formats`** (Newly Added): Asserts price padding status EOD caching behavior, cache hits, different return format options (`numpy-recarray`, `pandas-dataframe`, `numpy-ndarray`), and strict mock symbol 404 validation.
+21. **`test_21_server_discovery_and_probing`** (Newly Added): Asserts parallel candidate server probing, automatic active URL locking, status verification, and fallback handling when all candidate servers are down.
 
 ---
 
@@ -119,6 +120,7 @@ We created beautiful verification notebooks mapping our full suite of functional
 - **[`test__major_exchange_listed.ipynb`](file:///c:/Projects/claudeai/gemini/ngd_proxy/test__major_exchange_listed.ipynb):** Major exchange listed status price caching and dynamic formats.
 - **[`test__capital_event.ipynb`](file:///c:/Projects/claudeai/gemini/ngd_proxy/test__capital_event.ipynb):** Corporate action capital events caching and dynamic formats.
 - **[`test__padding_status.ipynb`](file:///c:/Projects/claudeai/gemini/ngd_proxy/test__padding_status.ipynb):** EOD date padding indicators caching and dynamic formats.
+- **[`test__server_discovery.ipynb`](file:///c:/Projects/claudeai/gemini/ngd_proxy/test__server_discovery.ipynb):** Concurrent candidate server probing and timing metrics playbook.
 - **[`test__security_name.ipynb`](file:///c:/Projects/claudeai/gemini/ngd_proxy/test__security_name.ipynb):** Security names, fundamental fields, and watchlist details.
 - **[`test__exchange_name.ipynb`](file:///c:/Projects/claudeai/gemini/ngd_proxy/test__exchange_name.ipynb):** Short and full exchange names.
 - **[`test__update_time.ipynb`](file:///c:/Projects/claudeai/gemini/ngd_proxy/test__update_time.ipynb):** EOD database partition and symbol price update datetimes.
