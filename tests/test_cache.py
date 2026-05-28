@@ -893,6 +893,33 @@ class TestNorgateDataProxyAndCache(unittest.TestCase):
         with self.assertRaises(Exception):
             self.cache.padding_status_timeseries("AAPL")
 
+    def test_21_server_discovery_and_probing(self):
+        """Verifies that the client concurrently probes multiple URLs and locks onto the first active one."""
+        # 1. Probing with a dead port first, then our active test port
+        dead_url = "http://127.0.0.1:9999"
+        active_url = f"http://127.0.0.1:{TEST_PORT}"
+        
+        # Initialize client with both URLs
+        client = NorgateDataClient(
+            base_url=[dead_url, active_url],
+            api_key="test-secret-key"
+        )
+        
+        # Verify that the active server URL was successfully discovered and locked onto
+        self.assertEqual(client.base_url, active_url)
+        
+        # Verify that we can query the server status successfully via this client
+        status = client.status()
+        self.assertEqual(status.get("status"), "ok")
+        
+        # 2. Verify fallback behavior when no servers are responding
+        client_dead = NorgateDataClient(
+            base_url=["http://127.0.0.1:9998", "http://127.0.0.1:9997"],
+            api_key="test-secret-key"
+        )
+        # Should gracefully fall back to the first URL in the list
+        self.assertEqual(client_dead.base_url, "http://127.0.0.1:9998")
+
 if __name__ == "__main__":
     unittest.main()
 

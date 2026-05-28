@@ -19,36 +19,98 @@ class NorgateDataClient:
     """
     def __init__(
         self, 
-        base_url: Optional[str] = None, 
+        base_url: Optional[Union[str, List[str]]] = None, 
         api_key: Optional[str] = None,
         config_path: str = "config.json"
     ):
         # Resolve config path
         resolved_config_path = os.path.abspath(config_path)
         
-        # Load from config.json if not explicitly provided
-        self.base_url = base_url
         self.api_key = api_key
+        self.base_urls: List[str] = []
         
-        if os.path.exists(resolved_config_path):
-            try:
-                with open(resolved_config_path, "r") as f:
-                    config = json.load(f)
-                    if not self.base_url:
-                        self.base_url = config.get("server_base_url", "http://127.0.0.1:8000")
-                    if not self.api_key:
-                        self.api_key = config.get("api_key", "norgate-secure-default-key-replace-me")
-            except Exception as e:
-                logger.warning(f"Failed to parse config file: {e}. Using explicit inputs or defaults.")
-        
+        # Determine candidate base URLs
+        if isinstance(base_url, list):
+            self.base_urls = base_url
+        elif isinstance(base_url, str):
+            self.base_urls = [u.strip() for u in base_url.split(",") if u.strip()]
+            
+        if not self.base_urls:
+            if os.path.exists(resolved_config_path):
+                try:
+                    with open(resolved_config_path, "r") as f:
+                        config = json.load(f)
+                        cfg_url = config.get("server_base_url")
+                        if isinstance(cfg_url, list):
+                            self.base_urls = cfg_url
+                        elif isinstance(cfg_url, str):
+                            self.base_urls = [u.strip() for u in cfg_url.split(",") if u.strip()]
+                            
+                        if not self.api_key:
+                            self.api_key = config.get("api_key", "norgate-secure-default-key-replace-me")
+                except Exception as e:
+                    logger.warning(f"Failed to parse config file: {e}. Using explicit inputs or defaults.")
+                    
         # Fallbacks if still not defined
-        self.base_url = self.base_url or "http://127.0.0.1:8000"
+        if not self.base_urls:
+            self.base_urls = ["http://127.0.0.1:8000"]
+            
         self.api_key = self.api_key or "norgate-secure-default-key-replace-me"
         
-        # Clean trailing slash from base url
-        self.base_url = self.base_url.rstrip("/")
+        # Discover and lock onto active server URL
+        self.base_url = self._discover_active_server()
         
         logger.info(f"Initialized client. Server URL: {self.base_url}")
+
+    def _discover_active_server(self) -> str:
+        """
+        Concurrently probes all configured base_urls to find the first responding server.
+        Uses a lightweight /status request with a short timeout.
+        If no server responds, falls back to the first URL in the list.
+        """
+        if len(self.base_urls) <= 1:
+            url = self.base_urls[0].rstrip("/")
+            logger.info(f"Using single configured server: {url}")
+            return url
+
+        import concurrent.futures
+
+        def probe_url(url: str) -> Optional[str]:
+            clean_url = url.rstrip("/")
+            probe_endpoint = f"{clean_url}/status"
+            headers = {}
+            if self.api_key:
+                headers["X-API-Key"] = self.api_key
+            try:
+                # Use a very short timeout (e.g. 0.5s) for discovery
+                response = requests.get(probe_endpoint, headers=headers, timeout=0.5)
+                if response.status_code == 200:
+                    return clean_url
+            except Exception:
+                pass
+            return None
+
+        logger.info(f"Probing {len(self.base_urls)} candidate servers: {self.base_urls}")
+        
+        # Concurrently probe all candidate URLs
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(self.base_urls)) as executor:
+            futures = {executor.submit(probe_url, url): url for url in self.base_urls}
+            
+            # Wait for the first success
+            active_url = None
+            for future in concurrent.futures.as_completed(futures):
+                result = future.result()
+                if result:
+                    active_url = result
+                    break  # Stop at the first responding server
+
+        if active_url:
+            logger.info(f"Discovered active server: {active_url}")
+            return active_url
+        else:
+            fallback = self.base_urls[0].rstrip("/")
+            logger.warning(f"No active server responded. Falling back to first candidate: {fallback}")
+            return fallback
 
     def _get_headers(self) -> Dict[str, str]:
         headers = {}

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ngd_proxy"
-version = "1.0.0"
+version = "1.0.1"
 description = "A high-performance HTTP & Parquet proxy and caching engine for Norgate Data."
 readme = "README.md"
 requires-python = ">=3.8"
